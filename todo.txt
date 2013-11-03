@@ -1,0 +1,16 @@
+- {RepoDefinition}, {RepoAttributeDefinition} változhat, miután már létrejött belőle
+	példány.
+- Runtime persistence (Megoldottnak tűnik)
+- History persistence (Valszeg saját kell)
+- {KnowledgeSession} kitakarítása memóriából nincs megoldva. A {session}-től kell elkérni
+	a {WorkItemManager}-t és azon hívni egy {completeWorkItem}-et.
+	Javaslat: {KnowledgeSession} manuális kitakarítása a memóriából safe point-nál
+		(perzisztencia után) azonnal, alkalmazás hívása {sessionId}, {workItemId}
+		paraméterekkel, ezek alapján adatbázisból visszatölteni a {KnowledgeSession}-t és
+		folytatni a {process}-t.
+- {WorkItemHandler} runtime betöltése nem megoldott
+	{Classloader}-t kéne írni?
+- Dynamic Persistent Relational Repository
+
+
+C:\deployed\database\db-derby-10.10.1.1-bin\lib>java -cp derbytools.jar;derbynet.jar -jar derbyrun.jar server start 

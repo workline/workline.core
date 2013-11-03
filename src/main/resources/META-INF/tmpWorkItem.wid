@@ -1,0 +1,12 @@
+import org.drools.process.core.datatype.impl.type.StringDataType;
+[
+  // the Notification work item
+  [
+    "name" : "TmpWorkItem",
+    "parameters" : [
+      "someString" : new StringDataType()
+    ],
+    "displayName" : "Tmp Work Item"
+  ]
+
+]

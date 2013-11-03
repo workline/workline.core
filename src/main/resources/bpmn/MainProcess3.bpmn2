@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:g="http://www.jboss.org/drools/flow/gpd" xmlns:tns="http://www.jboss.org/drools" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd http://www.omg.org/spec/DD/20100524/DC http://www.omg.org/spec/DD/20100524/DC-XMI http://www.omg.org/spec/DD/20100524/DI http://www.omg.org/spec/DD/20100524/DI-XMI http://www.omg.org/spec/BPMN/20100524/DI http://www.omg.org/spec/BPMN/20100524/DI-XMI" id="Definition" expressionLanguage="http://www.mvel.org/2.0" targetNamespace="" typeLanguage="http://www.java.com/javaTypes">
+  <process id="Process_1" tns:version="1" tns:packageName="defaultPackage" tns:adHoc="false" name="MainProcess3" isExecutable="true" processType="Private">
+    <extensionElements>
+      <tns:import name="workflow.domain.Person"/>
+      <tns:global id="GlobalType_1" identifier="person2" type="workflow.domain.Person"/>
+    </extensionElements>
+    <startEvent id="StartEvent_1" name="Start Event 1">
+      <outgoing>StartEvent_1-ScriptTask_1</outgoing>
+    </startEvent>
+    <scriptTask id="ScriptTask_1" name="MainTask" scriptFormat="http://www.java.com/java">
+      <incoming>StartEvent_1-ScriptTask_1</incoming>
+      <outgoing>ScriptTask_1-EndEvent_1</outgoing>
+      <script>// System.err.println(&quot;task: MainTask&quot;);</script>
+    </scriptTask>
+    <endEvent id="EndEvent_1" name="End Event 1">
+      <incoming>ScriptTask_1-EndEvent_1</incoming>
+    </endEvent>
+    <sequenceFlow id="StartEvent_1-ScriptTask_1" tns:priority="1" sourceRef="StartEvent_1" targetRef="ScriptTask_1"/>
+    <sequenceFlow id="ScriptTask_1-EndEvent_1" tns:priority="1" sourceRef="ScriptTask_1" targetRef="EndEvent_1"/>
+  </process>
+  <itemDefinition id="ItemDefinition_1" structureRef="workflow.domain.Person"/>
+  <itemDefinition id="ItemDefinition_1156" structureRef="Boolean"/>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_Process_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="BPMNShape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds height="48.0" width="48.0" x="36.0" y="46.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_1" bpmnElement="ScriptTask_1">
+        <dc:Bounds height="50.0" width="110.0" x="128.0" y="45.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds height="48.0" width="48.0" x="282.0" y="46.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_1" bpmnElement="StartEvent_1-ScriptTask_1" sourceElement="BPMNShape_StartEvent_1" targetElement="BPMNShape_ScriptTask_1">
+        <di:waypoint xsi:type="dc:Point" x="60.0" y="94.0"/>
+        <di:waypoint xsi:type="dc:Point" x="60.0" y="70.0"/>
+        <di:waypoint xsi:type="dc:Point" x="183.0" y="95.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_2" bpmnElement="ScriptTask_1-EndEvent_1" sourceElement="BPMNShape_ScriptTask_1" targetElement="BPMNShape_EndEvent_1">
+        <di:waypoint xsi:type="dc:Point" x="183.0" y="95.0"/>
+        <di:waypoint xsi:type="dc:Point" x="306.0" y="94.0"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <relationship id="Relationship_1">
+    <extensionElements>
+      <tns:ProcessAnalysisData>
+        <tns:Scenario xsi:type="tns:Scenario" id="Scenario_1" name="Scenario 1">
+          <tns:ScenarioParameters xsi:type="tns:ScenarioParameters" baseTimeUnit="ms"/>
+          <tns:ElementParameters xsi:type="tns:ElementParameters" elementId="StartEvent_1" id="ElementParameters_1">
+            <tns:TimeParameters xsi:type="tns:TimeParameters">
+              <tns:WaitTime xsi:type="tns:Parameter">
+                <tns:FloatingParameter value="1.0"/>
+              </tns:WaitTime>
+              <tns:TimeUnit>s</tns:TimeUnit>
+            </tns:TimeParameters>
+          </tns:ElementParameters>
+          <tns:ElementParameters xsi:type="tns:ElementParameters" elementId="ScriptTask_1" id="ElementParameters_2">
+            <tns:TimeParameters xsi:type="tns:TimeParameters">
+              <tns:ProcessingTime xsi:type="tns:Parameter">
+                <tns:RandomDistribution max="1.0" min="0.0"/>
+              </tns:ProcessingTime>
+              <tns:TimeUnit>s</tns:TimeUnit>
+            </tns:TimeParameters>
+            <tns:CostParameters xsi:type="tns:CostParameters">
+              <tns:UnitCost xsi:type="tns:Parameter">
+                <tns:DecimalParameter value="0"/>
+              </tns:UnitCost>
+            </tns:CostParameters>
+          </tns:ElementParameters>
+          <tns:ElementParameters xsi:type="tns:ElementParameters" elementId="EndEvent_1" id="ElementParameters_3">
+            <tns:TimeParameters xsi:type="tns:TimeParameters">
+              <tns:ProcessingTime xsi:type="tns:Parameter">
+                <tns:RandomDistribution max="1.0" min="0.0"/>
+              </tns:ProcessingTime>
+              <tns:TimeUnit>s</tns:TimeUnit>
+            </tns:TimeParameters>
+          </tns:ElementParameters>
+          <tns:ElementParameters xsi:type="tns:ElementParameters" elementId="StartEvent_1-ScriptTask_1" id="ElementParameters_4">
+            <tns:ControlParameters xsi:type="tns:ControlParameters">
+              <tns:Probability xsi:type="tns:Parameter">
+                <tns:FloatingParameter value="100.0"/>
+              </tns:Probability>
+            </tns:ControlParameters>
+          </tns:ElementParameters>
+          <tns:ElementParameters xsi:type="tns:ElementParameters" elementId="ScriptTask_1-EndEvent_1" id="ElementParameters_5">
+            <tns:ControlParameters xsi:type="tns:ControlParameters">
+              <tns:Probability xsi:type="tns:Parameter">
+                <tns:FloatingParameter value="100.0"/>
+              </tns:Probability>
+            </tns:ControlParameters>
+          </tns:ElementParameters>
+        </tns:Scenario>
+      </tns:ProcessAnalysisData>
+    </extensionElements>
+    <source>Definition</source>
+    <target>Definition</target>
+  </relationship>
+</definitions>
