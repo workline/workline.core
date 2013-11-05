@@ -112,6 +112,11 @@
 			<artifactId>loggee</artifactId>
 			<version>1.0.0</version>
 		</dependency>
+		<dependency>
+			<groupId>net.sf.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>2.3</version>
+		</dependency>
 	</dependencies>
 	<repositories>
 		<repository>
@@ -120,7 +125,7 @@
 		</repository>
 	</repositories>
 	<build>
-		<finalName>workflow-application-jbpm</finalName>
+		<finalName>workflow.core-application-jbpm</finalName>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
