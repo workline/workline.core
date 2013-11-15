@@ -28,9 +28,11 @@ import workflow.core.api.internal.IBasicWorkItemHandler;
 import workflow.core.api.internal.IEngine;
 import workflow.core.domain.ProcessData;
 import workflow.core.engine.constants.WorklineEngineConstants;
+import workflow.core.meta.SPECIFICATION_REQUIRED;
 import workflow.core.util.Primary;
 import workflow.core.workitem.DefaultBasicWorkItemHandler;
 
+@SPECIFICATION_REQUIRED("Issued AccessRight?")
 @Stateless
 public class Engine implements IEngine {
     private static final String PROCESS_DEFINITION_DIRECTORY_PATH = "bpmn/";
@@ -125,6 +127,7 @@ public class Engine implements IEngine {
         return environment;
     }
 
+    // TODO Maybe task specific process variables with default values should be created at this point
     private RepoItem createProcessRepoItem() {
         RepoItem processRepoItem = new RepoItem();
 

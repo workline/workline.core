@@ -21,6 +21,7 @@ public class Initializer {
     @Inject
     private RepoHandler repoHandler;
 
+    // TODO RepoItems should have an attribute 'types' that tags it as a certain type of RepoItem. E.g. 'accessRight'
     @PostConstruct
     public void init() {
         RepoItem testWorklineProcessRepoItem = new RepoItem();
@@ -28,9 +29,9 @@ public class Initializer {
         entityManager.persist(testWorklineProcessRepoItem);
 
         String definitionName4DefineRequest = "defineRequestDefinition";
-        String ioVariableSource4DefineRequest = "";
-        String taskSpecificProcessVariablesDefinition4DefineRequest = "";
-        String inputBehaviourSource4DefineRequest = "";
+        String ioVariableSource4DefineRequest = "accessRight.(Additional input for Access right request Define request)";
+        String taskSpecificProcessVariablesDefinition4DefineRequest = "accessRight;Repo::AccessRight;Process;existing accessRight";
+        String inputBehaviourSource4DefineRequest = "accessRight.Input behaviour for (Access right request).(Define request)";
         createTaskDefinition(definitionName4DefineRequest, ioVariableSource4DefineRequest, taskSpecificProcessVariablesDefinition4DefineRequest,
                 inputBehaviourSource4DefineRequest);
 

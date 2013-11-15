@@ -2,7 +2,7 @@ package workflow.core.domain;
 
 import java.io.Serializable;
 
-public class ProcessVariableDefinition implements Serializable {
+public class ProcessElementVariableDefinition implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String name;
