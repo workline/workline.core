@@ -3,6 +3,8 @@ package workflow.core.workitem;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 
+import loggee.api.Logged;
+
 import org.drools.runtime.process.WorkItem;
 import org.drools.runtime.process.WorkItemManager;
 
@@ -14,6 +16,7 @@ import workflow.core.meta.BEWARETag;
 import workflow.core.meta.TODO;
 
 @BEWARE(tags = { BEWARETag.SCOPE })
+@Logged
 @RequestScoped
 public class DefaultBasicWorkItemHandler implements IBasicWorkItemHandler {
     @TODO("Is this thread-safe?")

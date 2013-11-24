@@ -41,5 +41,4 @@ public class ProcessElementVariableDefinition implements Serializable {
     public void setInputVariableSelectionData(InputVariableSelectionData inputVariableSelectionData) {
         this.inputVariableSelectionData = inputVariableSelectionData;
     }
-
 }

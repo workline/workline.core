@@ -14,12 +14,11 @@ import javax.persistence.PersistenceContext;
 public class Resources {
     @Produces
     @Primary
-    @PersistenceContext(unitName = "primary")
+    @PersistenceContext(unitName = "workflow.core.primary")
     private EntityManager primaryEntityManager;
 
     @Produces
-    @WorkflowHistory
-    @PersistenceContext(unitName = "workflow.core.history")
-    private EntityManager workflowHistoryEntityManager;
-
+    @ProcessEngine
+    @PersistenceContext(unitName = "workflow.core.process_engine")
+    private EntityManager processEngineEntityManager;
 }

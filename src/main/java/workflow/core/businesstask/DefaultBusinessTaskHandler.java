@@ -5,13 +5,15 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import loggee.api.Logged;
 import vrds.model.EAttributeType;
 import vrds.model.MetaAttribute;
 import vrds.model.RepoItem;
-import vrds.model.RepoItemAttribute;
 import vrds.model.attributetype.RepoItemAttributeValueHandler;
 import vrds.model.attributetype.StringAttributeValueHandler;
 import workflow.core.api.internal.IBusinessTaskHandler;
+import workflow.core.api.internal.IProcessElementService;
+import workflow.core.api.internal.IRepoHandler;
 import workflow.core.domain.EInputVariableScope;
 import workflow.core.domain.EInputVariableSelectionType;
 import workflow.core.domain.EInputVariableType;
@@ -21,9 +23,11 @@ import workflow.core.domain.InputVariableTypeData;
 import workflow.core.domain.ProcessElementVariableDefinition;
 import workflow.core.engine.constants.WorklineEngineConstants;
 import workflow.core.meta.SPECIFICATION_REQUIRED;
-import workflow.core.repo.workflow.service.IProcessElementService;
 
+@Logged
 public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
+    @Inject
+    private IRepoHandler repoHandler;
     @Inject
     private IProcessElementService processElementService;
 
@@ -35,13 +39,16 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     }
 
     @Override
-    public void readVariable(RepoItem businessTask, String variableName) {
-        // TODO LATER Auto-generated method stub
+    public Object readVariable(Long businessTaskId, String variableName) {
+        RepoItem businessTask = repoHandler.getRepoItem(businessTaskId);
 
+        return businessTask.getValue(variableName);
     }
 
     @Override
-    public void writeVariable(RepoItem businessTask, String variableName, Object value) {
+    public void writeVariable(Long businessTaskId, String variableName, Object value) {
+        RepoItem businessTask = repoHandler.getRepoItem(businessTaskId);
+
         businessTask.setValue(variableName, value);
 
         runInputBehaviourLogic(businessTask);
@@ -127,7 +134,7 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
 
     private void postProcess(RepoItem businessTask) {
         // FIXME Auto-generated method stub
-        // Probably should add task specific process variables to process at this point
+        // TODO Probably should add task specific process variables to process at this point
     }
 
     private void close(RepoItem businessTask) {
@@ -150,18 +157,20 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
 
         // TODO LATER Remove previous, not used attributes
         for (ProcessElementVariableDefinition contextDependentProcessVariableDefinition : contextDependentProcessVariableDefinitionList) {
-            RepoItemAttribute ioAttribute = processElementService.addVariableToProcessElement(businessTask, contextDependentProcessVariableDefinition);
-
             MetaAttribute dynamicTag = new MetaAttribute();
-            dynamicTag.setOwnerAttribute(ioAttribute);
-            dynamicTag.setNameAndType(WorklineEngineConstants.DYNAMIC_TAG, EAttributeType.STRING);
+            dynamicTag.setNameAndType(WorklineEngineConstants.DYNAMIC, EAttributeType.STRING);
+            dynamicTag.setValue(ioVariableSourceExpression);
+
+            processElementService.addVariableToProcessElement(businessTask, contextDependentProcessVariableDefinition);
 
             if (contextDependentProcessVariableDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
                 if (process.hasAttribute(contextDependentProcessVariableDefinition.getName())) {
                     processElementService.copyProcessElementVariable(process, businessTask, contextDependentProcessVariableDefinition);
                 } else {
-                    // FIXME
+                    processElementService.addVariableToProcessElement(process, contextDependentProcessVariableDefinition);
                 }
+            } else {
+                // Do nothing. All variables (regardless of scope) has already been added to business task.
             }
         }
     }

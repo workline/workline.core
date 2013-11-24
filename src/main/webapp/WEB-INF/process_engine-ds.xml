@@ -2,9 +2,9 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.jboss.org/ironjacamar/schema http://docs.jboss.org/ironjacamar/schema/datasources_1_0.xsd">
 
-	<datasource jndi-name="java:jboss/datasources/WorkflowRuntimeDS"
-		pool-name="WorkflowRuntime" enabled="true" use-ccm="false">
-		<connection-url>jdbc:derby://localhost:1527/../instance/WorkflowRuntime;create=true</connection-url>
+	<datasource jndi-name="java:jboss/datasources/WorkflowCoreProcessEngineDS"
+		pool-name="WorkflowHistory" enabled="true" use-ccm="false">
+		<connection-url>jdbc:derby://localhost:1527/../instance/WorkflowCoreProcessEngine;create=true</connection-url>
 		<driver>org.apache.derby</driver>
 		<security>
 			<user-name>sa</user-name>

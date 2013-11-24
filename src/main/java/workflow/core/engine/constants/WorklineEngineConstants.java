@@ -2,6 +2,8 @@ package workflow.core.engine.constants;
 
 public interface WorklineEngineConstants {
     public static final String PROCESS = "process";
+    public static final String PROCESS_INSTANCE_ID = "processInstanceId";
+    public static final String SESSION_ID = "sessionId";
 
     public static final String IO_VARIABLE_SOURCE = "ioVariableSource";
     public static final String TASK_SPECIFIC_PROCESS_VARIABLES_DEFINITION = "taskSpecificProcessVariablesDefinition";
@@ -17,5 +19,5 @@ public interface WorklineEngineConstants {
 
     public static final String TASK_NAME = "taskName";
     public static final String FINISHED = "finished";
-    public static final String DYNAMIC_TAG = "dynamicTag";
+    public static final String DYNAMIC = "dynamic";
 }

@@ -4,11 +4,14 @@ import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 
+import loggee.api.Logged;
 import vrds.model.EAttributeType;
 import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
+import workflow.core.api.internal.IRepoHandler;
 import workflow.core.util.Primary;
 
+@Logged
 @Stateless
 public class RepoHandler implements IRepoHandler {
     @Inject
@@ -31,15 +34,17 @@ public class RepoHandler implements IRepoHandler {
     }
 
     @Override
-    public void addAttribute(RepoItem repoItem, String attributeName, EAttributeType type) {
-        _addAttribute(repoItem, attributeName, type);
+    public RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type) {
+        return _addAttribute(repoItem, attributeName, type);
     }
 
     @Override
-    public void addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, Object value) {
+    public RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, Object value) {
         RepoItemAttribute repoItemAttribute = _addAttribute(repoItem, attributeName, type);
 
         repoItemAttribute.setValue(value);
+
+        return repoItemAttribute;
     }
 
     private RepoItemAttribute _addAttribute(RepoItem repoItem, String attributeName, EAttributeType type) {

@@ -8,8 +8,8 @@ import javax.persistence.EntityManager;
 
 import vrds.model.EAttributeType;
 import vrds.model.RepoItem;
+import workflow.core.api.internal.IRepoHandler;
 import workflow.core.engine.constants.WorklineEngineConstants;
-import workflow.core.repo.RepoHandler;
 import workflow.core.util.Primary;
 
 @Startup
@@ -19,7 +19,7 @@ public class Initializer {
     @Primary
     private EntityManager entityManager;
     @Inject
-    private RepoHandler repoHandler;
+    private IRepoHandler repoHandler;
 
     // TODO RepoItems should have an attribute 'types' that tags it as a certain type of RepoItem. E.g. 'accessRight'
     @PostConstruct

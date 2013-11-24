@@ -1,9 +1,7 @@
 package workflow.core.api.internal;
 
-import vrds.model.RepoItem;
-
 public interface IBusinessTaskAccessor {
-    void readVariable(RepoItem businessTask, String variableName);
+    Object readVariable(Long businessTaskId, String variableName);
 
-    void writeVariable(RepoItem businessTask, String variableName, Object value);
+    void writeVariable(Long businessTaskId, String variableName, Object value);
 }

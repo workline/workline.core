@@ -1,4 +1,4 @@
-package workflow.core.repo;
+package workflow.core.api.internal;
 
 import vrds.model.EAttributeType;
 import vrds.model.RepoItem;
@@ -11,8 +11,8 @@ public interface IRepoHandler {
 
     void persistRepoItemAttribute(RepoItemAttribute repoItemAttribute);
 
-    void addAttribute(RepoItem repoItem, String attributeName, EAttributeType type);
+    RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type);
 
-    void addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, Object value);
+    RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, Object value);
 
 }
