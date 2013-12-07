@@ -14,7 +14,7 @@
 	xsi:schemaLocation="
         http://java.sun.com/xml/ns/persistence
         http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
-	<persistence-unit name="workflow.core.process_engine">
+	<persistence-unit name="workline.core.process_engine">
 		<jta-data-source>java:jboss/datasources/WorkflowCoreProcessEngineDS</jta-data-source>
 
 		<mapping-file>META-INF/JBPMorm-JPA2.xml</mapping-file>
@@ -38,19 +38,19 @@
 		</properties>
 	</persistence-unit>
 	
-	<persistence-unit name="workflow.core.primary">
+	<persistence-unit name="workline.core.primary">
 		<jta-data-source>java:jboss/datasources/WorkflowCorePrimaryDS</jta-data-source>
 
 		<mapping-file>META-INF/JBPMorm-JPA2.xml</mapping-file>
 		<mapping-file>META-INF/ProcessInstanceInfoMapping-JPA2.xml</mapping-file>
 		
-		<class>workflow.core.domain.ProcessData</class>
+		<class>workline.core.domain.ProcessData</class>
 
 		<class>vrds.model.RepoItem</class>
 		<class>vrds.model.RepoItemAttribute</class>
 		<class>vrds.model.MetaAttribute</class>
 		<class>vrds.model.StringValue</class>
-		<class>vrds.model.LongValue</class>
+		<class>vrds.model.IntegerValue</class>
 		<class>vrds.model.RepoItemValue</class>
 		<class>vrds.model.AttributeValue</class>
 
@@ -61,7 +61,7 @@
 <!-- 			<property name="jboss.as.jpa.adapterClass" value="org.jboss.as.jpa.hibernate4.HibernatePersistenceProviderAdaptor" /> -->
 			<property name="hibernate.dialect" value="org.hibernate.dialect.DerbyTenSevenDialect" />
 			<property name="hibernate.hbm2ddl.auto" value="create" />
-			<property name="hibernate.show_sql" value="false" />
+			<property name="hibernate.show_sql" value="true" />
 			<property name="hibernate.format_sql" value="true" />
 			<property name="hibernate.ejb.naming_strategy" value="org.hibernate.cfg.ImprovedNamingStrategy" />
 		</properties>
