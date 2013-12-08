@@ -1,4 +1,6 @@
-package workline.core.repo;
+package workline.core.repo.handler;
+
+import java.util.Set;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -6,9 +8,12 @@ import javax.persistence.EntityManager;
 
 import loggee.api.Logged;
 import vrds.model.EAttributeType;
+import vrds.model.IValueWrapper;
 import vrds.model.MetaAttribute;
 import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
+import vrds.model.meta.TODO;
+import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IRepoHandler;
 import workline.core.util.Primary;
 
@@ -72,6 +77,31 @@ public class RepoHandler implements IRepoHandler {
         metaAttribute.setOwnerAttribute(ownerAttribute);
 
         return metaAttribute;
+    }
+
+    @Override
+    public void setValue(RepoItem repoItem, String attributeName, Object value) {
+        setValue(repoItem, null, attributeName, value);
+    }
+
+    @Override
+    public void setValue(RepoItem repoItem, RepoItem benefactor, String attributeName, Object value) {
+        IValueWrapper<Object> valueWrapper = repoItem.getValueWrapper(attributeName, benefactor);
+
+        if (valueWrapper == null) {
+            IValueWrapper<?> newValueWrapper = repoItem.addValue(attributeName, value);
+            newValueWrapper.setBenefactor(benefactor);
+            entityManager.persist(newValueWrapper);
+        } else {
+            valueWrapper.setValue(value);
+        }
+    }
+
+    @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION })
+    @Override
+    public Set<RepoItemAttribute> getInheritors() {
+        // FIXME
+        return null;
     }
 
     private RepoItemAttribute _addAttribute(RepoItem repoItem, String attributeName, EAttributeType type) {

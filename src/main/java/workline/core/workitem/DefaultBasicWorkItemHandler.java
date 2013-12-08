@@ -8,12 +8,12 @@ import loggee.api.Logged;
 import org.drools.runtime.process.WorkItem;
 import org.drools.runtime.process.WorkItemManager;
 
+import vrds.model.meta.TODO;
 import workline.core.api.internal.IBasicWorkItemHandler;
 import workline.core.api.internal.IProcessTaskHandler;
 import workline.core.engine.constants.WorklineEngineConstants;
 import workline.core.meta.BEWARE;
 import workline.core.meta.BEWARETag;
-import workline.core.meta.TODO;
 
 @BEWARE(tags = { BEWARETag.SCOPE })
 @Logged

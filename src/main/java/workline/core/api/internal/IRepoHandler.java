@@ -1,5 +1,7 @@
 package workline.core.api.internal;
 
+import java.util.Set;
+
 import vrds.model.EAttributeType;
 import vrds.model.MetaAttribute;
 import vrds.model.RepoItem;
@@ -23,4 +25,11 @@ public interface IRepoHandler {
     MetaAttribute createMetaAttribute(RepoItemAttribute ownerAttribute, String name, EAttributeType type);
 
     MetaAttribute createMetaAttribute(String name, EAttributeType type);
+
+    void setValue(RepoItem repoItem, String attributeName, Object value);
+
+    void setValue(RepoItem repoItem, RepoItem benefactor, String attributeName, Object value);
+
+    Set<RepoItemAttribute> getInheritors();
+
 }

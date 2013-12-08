@@ -27,17 +27,18 @@ import org.slf4j.Logger;
 
 import vrds.model.EAttributeType;
 import vrds.model.RepoItem;
+import vrds.model.meta.TODO;
+import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IBasicWorkItemHandler;
 import workline.core.api.internal.IEngine;
 import workline.core.api.internal.IRepoHandler;
 import workline.core.domain.ProcessData;
 import workline.core.engine.constants.WorklineEngineConstants;
-import workline.core.meta.SPECIFICATION_REQUIRED;
 import workline.core.util.Primary;
 import workline.core.util.ProcessEngine;
 import workline.core.workitem.DefaultBasicWorkItemHandler;
 
-@SPECIFICATION_REQUIRED("Issued AccessRight?")
+@TODO(tags = { TODOTag.SPECIFICATION_REQUIRED }, value = "Issued AccessRight?")
 @Logged
 @Stateless
 public class Engine implements IEngine {

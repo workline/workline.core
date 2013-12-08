@@ -14,6 +14,8 @@ import vrds.model.RepoItemAttribute;
 import vrds.model.attributetype.IntegerAttributeValueHandler;
 import vrds.model.attributetype.RepoItemAttributeValueHandler;
 import vrds.model.attributetype.StringAttributeValueHandler;
+import vrds.model.meta.TODO;
+import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IBusinessTaskHandler;
 import workline.core.api.internal.IEngine;
 import workline.core.api.internal.IProcessElementService;
@@ -23,8 +25,6 @@ import workline.core.domain.EInputVariableScope;
 import workline.core.domain.ProcessElementVariableDefinition;
 import workline.core.engine.constants.WorklineEngineConstants;
 import workline.core.engine.constants.WorklineEngineQueries;
-import workline.core.meta.SPECIFICATION_REQUIRED;
-import workline.core.meta.TODO;
 import workline.core.util.Primary;
 
 @Logged
@@ -65,6 +65,7 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
 
     }
 
+    @TODO(tags = { TODOTag.PROCESS_TO_TASK_RELATIONSHIP }, value = "Probably need to copy task variables to process variables at this point.")
     @Override
     public void finishBusinessTask(Long businessTaskId) {
         // TODO Auto-generated method stub
@@ -82,6 +83,11 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
     public Object readVariable(Long businessTaskId, String variableName) {
         return businessTaskHandler.readVariable(businessTaskId, variableName);
 
+    }
+
+    @Override
+    public void writeVariable(Long businessTaskId, String variableName, Long repoItemId) {
+        businessTaskHandler.writeVariable(businessTaskId, variableName, repoItemId);
     }
 
     @Override
@@ -104,8 +110,9 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
         }
     }
 
-    @TODO("A business task needs to be created for every participating actor/actor group.")
-    @SPECIFICATION_REQUIRED("How to create business tasks?")
+    @TODO(
+            tags = { TODOTag.SPECIFICATION_REQUIRED },
+            value = "How to create business tasks? | A business task needs to be created for every participating actor/actor group.")
     private List<RepoItem> createBusinessTasks(String taskName, RepoItem businessTaskDefinition) {
         // TODO Auto-generated method stub
 

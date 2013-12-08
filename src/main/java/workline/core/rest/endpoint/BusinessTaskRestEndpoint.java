@@ -15,10 +15,10 @@ import javax.ws.rs.core.MediaType;
 import loggee.api.Logged;
 import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
+import vrds.model.meta.TODO;
+import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IProcessTaskHandler;
 import workline.core.api.internal.IRepoHandler;
-import workline.core.meta.TODO;
-import workline.core.meta.TODOTag;
 
 @Path("/task")
 @RequestScoped
@@ -38,6 +38,7 @@ public class BusinessTaskRestEndpoint {
         return value;
     }
 
+    @TODO(tags = { TODOTag.TRANSACTION })
     @GET
     @Path("/readVariableNames/{businessTaskId}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -67,9 +68,7 @@ public class BusinessTaskRestEndpoint {
     public Object writeRepoItemVariable(@PathParam("businessTaskId") Long businessTaskId, @PathParam("variableName") String variableName,
             @PathParam("repoItemId") Long repoItemId) {
 
-        RepoItem repoItem = repoHandler.getRepoItem(repoItemId);
-
-        processTaskHandler.writeVariable(businessTaskId, variableName, repoItem);
+        processTaskHandler.writeVariable(businessTaskId, variableName, repoItemId);
 
         return true;
     }

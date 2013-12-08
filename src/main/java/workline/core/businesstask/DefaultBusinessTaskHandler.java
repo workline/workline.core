@@ -13,6 +13,8 @@ import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
 import vrds.model.attributetype.RepoItemAttributeValueHandler;
 import vrds.model.attributetype.StringAttributeValueHandler;
+import vrds.model.meta.TODO;
+import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IBusinessTaskHandler;
 import workline.core.api.internal.IProcessElementService;
 import workline.core.api.internal.IRepoHandler;
@@ -23,10 +25,12 @@ import workline.core.domain.InputVariableTypeData;
 import workline.core.domain.MappedToData;
 import workline.core.domain.ProcessElementVariableDefinition;
 import workline.core.engine.constants.WorklineEngineConstants;
-import workline.core.meta.SPECIFICATION_REQUIRED;
+import workline.core.repo.manager.IRepoManager;
 
 @Logged
 public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
+    @Inject
+    private IRepoManager repoManager;
     @Inject
     private IRepoHandler repoHandler;
     @Inject
@@ -39,6 +43,7 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         // TODO LATER Notify actors
     }
 
+    @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION, TODOTag.INHERITENCE })
     @Override
     public Object readVariable(Long businessTaskId, String variableName) {
         RepoItem businessTask = repoHandler.getRepoItem(businessTaskId);
@@ -47,11 +52,20 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     }
 
     @Override
+    public void writeVariable(Long businessTaskId, String variableName, Long repoItemId) {
+        RepoItem repoItem = repoHandler.getRepoItem(repoItemId);
+
+        writeVariable(businessTaskId, variableName, repoItem);
+    }
+
+    @TODO(tags = { TODOTag.INHERITENCE })
+    @Override
     public void writeVariable(Long businessTaskId, String variableName, Object value) {
         RepoItem businessTask = repoHandler.getRepoItem(businessTaskId);
 
+        repoManager.setValue(businessTask, variableName, value);
+
         RepoItemAttribute variable = businessTask.getAttribute(variableName);
-        variable.setValue(value);
         setMappedVariableIfNeeded(variable, value, businessTask);
 
         runInputBehaviourLogic(businessTask);
@@ -66,7 +80,9 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         close(businessTask);
     }
 
-    @SPECIFICATION_REQUIRED("How should accessRight RepoItems look like? What to do with the parsed data (inputVariableScope, inputVariableSelectionData)?")
+    @TODO(
+            tags = { TODOTag.SPECIFICATION_REQUIRED },
+            value = "How should accessRight RepoItems look like? What to do with the parsed data (inputVariableScope, inputVariableSelectionData)?")
     public List<ProcessElementVariableDefinition> parseIoVariableSourceData(String ioFlatData) {
         if (ioFlatData == null) {
             return Collections.emptyList();
@@ -111,7 +127,7 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
             MappedToData mappedToData = parseMappedToExpression(mappedToExpression);
 
             RepoItem mappedToVariable = businessTask.getValue(mappedToData.getVariableName(), RepoItemAttributeValueHandler.getInstance());
-            mappedToVariable.setValue(mappedToData.getVariableNameOfVariable(), value);
+            repoManager.setValue(mappedToVariable, mappedToData.getVariableNameOfVariable(), value);
         }
 
     }
@@ -227,6 +243,7 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         return null;
     }
 
+    @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION, TODOTag.INHERITENCE }, value = "getValue() inheritence")
     private String getFlatDataByExpression(RepoItem businessTask, String expression) {
         String flatData;
 
