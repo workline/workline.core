@@ -1,6 +1,7 @@
 package workline.core.rest.endpoint;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -19,6 +20,7 @@ import vrds.model.meta.TODO;
 import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IProcessTaskHandler;
 import workline.core.api.internal.IRepoHandler;
+import workline.core.engine.constants.WorklineEngineConstants;
 
 @Path("/task")
 @RequestScoped
@@ -33,7 +35,7 @@ public class BusinessTaskRestEndpoint {
     @Path("/readVariable/{businessTaskId}/{variableName}")
     @Produces(MediaType.APPLICATION_JSON)
     public Object readVariable(@PathParam("businessTaskId") Long businessTaskId, @PathParam("variableName") String variableName) {
-        Object value = processTaskHandler.readVariable(businessTaskId, variableName);
+        Object value = processTaskHandler.readVariable(businessTaskId, variableName).toString();
 
         return value;
     }
@@ -50,7 +52,9 @@ public class BusinessTaskRestEndpoint {
 
         Set<RepoItemAttribute> repoItemAttributes = businessTask.getRepoItemAttributes();
         for (RepoItemAttribute repoItemAttribute : repoItemAttributes) {
-            businessTaskVariableNames.add(repoItemAttribute.getName());
+            if (repoItemAttribute.getMetaAttribute(WorklineEngineConstants.VARIABLE) != null) {
+                businessTaskVariableNames.add(repoItemAttribute.getName());
+            }
         }
 
         return businessTaskVariableNames;
@@ -58,7 +62,7 @@ public class BusinessTaskRestEndpoint {
 
     @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION })
     public List<Object> getSelectionList() {
-        return null;
+        return Collections.emptyList();
     }
 
     // FIXME Use proper request type
@@ -69,6 +73,18 @@ public class BusinessTaskRestEndpoint {
             @PathParam("repoItemId") Long repoItemId) {
 
         processTaskHandler.writeVariable(businessTaskId, variableName, repoItemId);
+
+        return true;
+    }
+
+    // FIXME Use proper request type
+    @GET
+    @Path("/writeNumberVariable/{businessTaskId}/{variableName}/{value}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Object writeNumberVariable(@PathParam("businessTaskId") Long businessTaskId, @PathParam("variableName") String variableName,
+            @PathParam("value") Long value) {
+
+        processTaskHandler.writeVariable(businessTaskId, variableName, (Object) value);
 
         return true;
     }

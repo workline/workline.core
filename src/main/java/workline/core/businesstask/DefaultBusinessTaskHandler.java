@@ -1,8 +1,11 @@
 package workline.core.businesstask;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -37,13 +40,12 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     private IProcessElementService processElementService;
 
     @Override
-    public void initTask(RepoItem process, RepoItem businessTask) {
+    public void initBusinessTask(RepoItem process, RepoItem businessTask) {
         preProcess(businessTask);
         initialIO(process, businessTask);
         // TODO LATER Notify actors
     }
 
-    @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION, TODOTag.INHERITENCE })
     @Override
     public Object readVariable(Long businessTaskId, String variableName) {
         RepoItem businessTask = repoHandler.getRepoItem(businessTaskId);
@@ -58,7 +60,6 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         writeVariable(businessTaskId, variableName, repoItem);
     }
 
-    @TODO(tags = { TODOTag.INHERITENCE })
     @Override
     public void writeVariable(Long businessTaskId, String variableName, Object value) {
         RepoItem businessTask = repoHandler.getRepoItem(businessTaskId);
@@ -70,7 +71,7 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
 
         runInputBehaviourLogic(businessTask);
 
-        RepoItem process = businessTask.getValue(WorklineEngineConstants.PROCESS, RepoItemAttributeValueHandler.getInstance());
+        RepoItem process = repoHandler.getNonInheritingValue(businessTask, WorklineEngineConstants.PROCESS, RepoItemAttributeValueHandler.getInstance());
         setContextDependentIO(process, businessTask);
     }
 
@@ -80,41 +81,61 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         close(businessTask);
     }
 
+    public List<ProcessElementVariableDefinition> parseIoVariableSourceData(String ioFlatDataSet) {
+        return parseIoVariableSourceData(Collections.singleton(ioFlatDataSet));
+    }
+
     @TODO(
             tags = { TODOTag.SPECIFICATION_REQUIRED },
             value = "How should accessRight RepoItems look like? What to do with the parsed data (inputVariableScope, inputVariableSelectionData)?")
-    public List<ProcessElementVariableDefinition> parseIoVariableSourceData(String ioFlatData) {
-        if (ioFlatData == null) {
+    public List<ProcessElementVariableDefinition> parseIoVariableSourceData(Set<String> ioFlatDataSet) {
+        if (ioFlatDataSet == null || ioFlatDataSet.isEmpty()) {
             return Collections.emptyList();
         }
 
         List<ProcessElementVariableDefinition> processElementVariableDefinitions = new ArrayList<>();
 
-        String[] ioFlatDataTokens = ioFlatData.split(";");
-        String variableName = ioFlatDataTokens[0];
-        String typeDataAsString = ioFlatDataTokens[1];
-        String scopeAsString = ioFlatDataTokens[2];
-        String inputVariableSelectionQuery = ioFlatDataTokens[3];
+        for (String ioFlatData : ioFlatDataSet) {
+            String[] ioFlatDataTokens = ioFlatData.split(";");
+            String variableName = ioFlatDataTokens[0];
+            String typeDataAsString = ioFlatDataTokens[1];
+            String scopeAsString = ioFlatDataTokens[2];
+            String inputVariableSelectionQuery = ioFlatDataTokens[3];
+            String mappedToExpression;
+            if (ioFlatDataTokens.length > 4) {
+                mappedToExpression = ioFlatDataTokens[4];
+            } else {
+                mappedToExpression = null;
+            }
 
-        String[] typeDataTokens = typeDataAsString.split("::");
-        String typeAsString = typeDataTokens[0];
-        String typeRepoName = typeDataTokens[1];
+            String typeAsString;
+            String typeRepoName;
+            if (typeDataAsString.contains("::")) {
+                String[] typeDataTokens = typeDataAsString.split("::");
+                typeAsString = typeDataTokens[0];
+                typeRepoName = typeDataTokens[1];
+            } else {
+                typeAsString = typeDataAsString;
+                typeRepoName = null;
+            }
 
-        EInputVariableScope inputVariableScope = EInputVariableScope.valueOf(scopeAsString);
-        EInputVariableType inputVariableType = EInputVariableType.valueOf(typeAsString);
+            EInputVariableScope inputVariableScope = EInputVariableScope.valueOf(scopeAsString);
+            EInputVariableType inputVariableType = EInputVariableType.valueOf(typeAsString);
 
-        ProcessElementVariableDefinition processElementVariableDefinition = new ProcessElementVariableDefinition();
+            ProcessElementVariableDefinition processElementVariableDefinition = new ProcessElementVariableDefinition();
 
-        InputVariableTypeData type = new InputVariableTypeData();
-        type.setInputVariableType(inputVariableType);
-        type.setRepoName(typeRepoName);
+            InputVariableTypeData type = new InputVariableTypeData();
+            type.setInputVariableType(inputVariableType);
+            type.setRepoName(typeRepoName);
 
-        processElementVariableDefinition.setName(variableName);
-        processElementVariableDefinition.setType(type);
-        processElementVariableDefinition.setInputVariableScope(inputVariableScope);
-        processElementVariableDefinition.setInputVariableSelectionQuery(inputVariableSelectionQuery);
+            processElementVariableDefinition.setName(variableName);
+            processElementVariableDefinition.setType(type);
+            processElementVariableDefinition.setInputVariableScope(inputVariableScope);
+            processElementVariableDefinition.setInputVariableSelectionQuery(inputVariableSelectionQuery);
+            processElementVariableDefinition.setMappedToExpression(mappedToExpression);
 
-        processElementVariableDefinitions.add(processElementVariableDefinition);
+            processElementVariableDefinitions.add(processElementVariableDefinition);
+        }
 
         return processElementVariableDefinitions;
     }
@@ -126,8 +147,15 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         if (mappedToExpression != null) {
             MappedToData mappedToData = parseMappedToExpression(mappedToExpression);
 
-            RepoItem mappedToVariable = businessTask.getValue(mappedToData.getVariableName(), RepoItemAttributeValueHandler.getInstance());
-            repoManager.setValue(mappedToVariable, mappedToData.getVariableNameOfVariable(), value);
+            RepoItem mappedToVariable = repoHandler.getNonInheritingValue(businessTask, mappedToData.getVariableName(),
+                    RepoItemAttributeValueHandler.getInstance());
+            String variableNameOfVariable = mappedToData.getVariableNameOfVariable();
+
+            if (mappedToVariable.getAttribute(variableNameOfVariable) == null) {
+                repoHandler.addAttribute(mappedToVariable, variableNameOfVariable, variable.getType(), value);
+            } else {
+                repoManager.setValue(mappedToVariable, variableNameOfVariable, value);
+            }
         }
 
     }
@@ -143,7 +171,7 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         mappedToData.setVariableName(variableName);
         mappedToData.setVariableNameOfVariable(variableNameOfVariable);
 
-        return null;
+        return mappedToData;
     }
 
     private void preProcess(RepoItem businessTask) {
@@ -153,15 +181,15 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     private void initialIO(RepoItem process, RepoItem businessTask) {
         RepoItem businessTaskDefinition = getBusinessTaskDefinition(businessTask);
 
-        String taskSpecificProcessVariableDefinitionData = businessTaskDefinition.getValue(WorklineEngineConstants.TASK_SPECIFIC_PROCESS_VARIABLES_DEFINITION,
-                StringAttributeValueHandler.getInstance());
+        String taskSpecificProcessVariableDefinitionData = repoHandler.getNonInheritingValue(businessTaskDefinition,
+                WorklineEngineConstants.TASK_SPECIFIC_PROCESS_VARIABLES_DEFINITION, StringAttributeValueHandler.getInstance());
         List<ProcessElementVariableDefinition> taskSpecificProcessVariableDefinitionList = parseIoVariableSourceData(taskSpecificProcessVariableDefinitionData);
 
         for (ProcessElementVariableDefinition taskSpecificProcessVariableDefinition : taskSpecificProcessVariableDefinitionList) {
             processElementService.addVariableToProcessElement(businessTask, taskSpecificProcessVariableDefinition);
 
             if (taskSpecificProcessVariableDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
-                processElementService.copyProcessElementVariable(process, businessTask, taskSpecificProcessVariableDefinition);
+                processElementService.copyProcessElementVariableValue(process, businessTask, taskSpecificProcessVariableDefinition);
             }
         }
 
@@ -185,44 +213,47 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     private void setContextDependentIO(RepoItem process, RepoItem businessTask) {
         RepoItem businessTaskDefinition = getBusinessTaskDefinition(businessTask);
 
-        String ioVariableSourceExpression = businessTaskDefinition.getValue(WorklineEngineConstants.IO_VARIABLE_SOURCE,
+        String ioVariableSourceExpression = repoHandler.getNonInheritingValue(businessTaskDefinition, WorklineEngineConstants.IO_VARIABLE_SOURCE,
                 StringAttributeValueHandler.getInstance());
         List<ProcessElementVariableDefinition> contextDependentProcessVariableDefinitionList = getIoVariableSourceByExpression(businessTask,
                 ioVariableSourceExpression);
 
-        // TODO LATER Remove previous, not used attributes
+        // TODO LATER Remove previous, not used variables
         for (ProcessElementVariableDefinition contextDependentProcessVariableDefinition : contextDependentProcessVariableDefinitionList) {
             MetaAttribute dynamicTag = repoHandler.createMetaAttribute(WorklineEngineConstants.DYNAMIC, EAttributeType.STRING, ioVariableSourceExpression);
 
-            processElementService.addVariableToProcessElement(businessTask, contextDependentProcessVariableDefinition, dynamicTag);
+            RepoItemAttribute variable = processElementService.addVariableToProcessElement(businessTask, contextDependentProcessVariableDefinition, dynamicTag);
 
-            if (contextDependentProcessVariableDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
-                if (process.hasAttribute(contextDependentProcessVariableDefinition.getName())) {
-                    processElementService.copyProcessElementVariable(process, businessTask, contextDependentProcessVariableDefinition);
+            if (variable != null) {
+                if (contextDependentProcessVariableDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
+                    if (process.hasAttribute(contextDependentProcessVariableDefinition.getName())) {
+                        processElementService.copyProcessElementVariableValue(process, businessTask, contextDependentProcessVariableDefinition);
+                    } else {
+                        processElementService.addVariableToProcessElement(process, contextDependentProcessVariableDefinition);
+                    }
                 } else {
-                    processElementService.addVariableToProcessElement(process, contextDependentProcessVariableDefinition);
+                    // Do nothing. All variables (regardless of scope) has already been added to business task.
                 }
-            } else {
-                // Do nothing. All variables (regardless of scope) has already been added to business task.
             }
         }
     }
 
     private List<ProcessElementVariableDefinition> getIoVariableSourceByExpression(RepoItem businessTask, String expression) {
-        String flatData = getFlatDataByExpression(businessTask, expression);
+        Set<String> flatDataSet = getFlatDataSetByExpression(businessTask, expression);
 
-        return parseIoVariableSourceData(flatData);
+        return parseIoVariableSourceData(flatDataSet);
     }
 
     private RepoItem getBusinessTaskDefinition(RepoItem businessTask) {
-        RepoItem businessTaskDefinition = businessTask.getValue(WorklineEngineConstants.BUSINESS_TASK_DEFINITION, RepoItemAttributeValueHandler.getInstance());
+        RepoItem businessTaskDefinition = repoHandler.getNonInheritingValue(businessTask, WorklineEngineConstants.BUSINESS_TASK_DEFINITION,
+                RepoItemAttributeValueHandler.getInstance());
 
         return businessTaskDefinition;
     }
 
     private void runInputBehaviourLogic(RepoItem businessTask) {
         RepoItem businessTaskDefinition = getBusinessTaskDefinition(businessTask);
-        String inputBehaviourSourceExpression = businessTaskDefinition.getValue(WorklineEngineConstants.INPUT_BEHAVIOUR_SOURCE,
+        String inputBehaviourSourceExpression = repoHandler.getNonInheritingValue(businessTaskDefinition, WorklineEngineConstants.INPUT_BEHAVIOUR_SOURCE,
                 StringAttributeValueHandler.getInstance());
 
         InputBehaviourLogicURI inputBehaviourLogicURI = getInputBehaviourLogicURIyExpression(businessTask, inputBehaviourSourceExpression);
@@ -231,35 +262,42 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     }
 
     private InputBehaviourLogicURI getInputBehaviourLogicURIyExpression(RepoItem businessTask, String expression) {
-        String flatData = getFlatDataByExpression(businessTask, expression);
+        Set<String> flatDataSet = getFlatDataSetByExpression(businessTask, expression);
 
-        InputBehaviourLogicURI inputBehaviourLogicURI = parseInputBehaviourLogicURI(flatData);
+        InputBehaviourLogicURI inputBehaviourLogicURI = parseInputBehaviourLogicURI(flatDataSet);
 
         return inputBehaviourLogicURI;
     }
 
-    private InputBehaviourLogicURI parseInputBehaviourLogicURI(String flatData) {
+    private InputBehaviourLogicURI parseInputBehaviourLogicURI(Set<String> flatDataSet) {
         // FIXME LATER Auto-generated method stub
         return null;
     }
 
     @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION, TODOTag.INHERITENCE }, value = "getValue() inheritence")
-    private String getFlatDataByExpression(RepoItem businessTask, String expression) {
-        String flatData;
+    private Set<String> getFlatDataSetByExpression(RepoItem businessTask, String expression) {
+        Set<String> flatDataSet = new HashSet<>();
 
         String[] expressionTokens = expression.split("\\.");
         String attributeNameReferencingRepoItem = expressionTokens[0];
         String attributeNameOfReferencedRepoItem = expressionTokens[1];
 
-        RepoItem repoItemContainingFlatData = businessTask.getValue(attributeNameReferencingRepoItem, RepoItemAttributeValueHandler.getInstance());
+        RepoItem repoItemContainingFlatData = repoHandler.getNonInheritingValue(businessTask, attributeNameReferencingRepoItem,
+                RepoItemAttributeValueHandler.getInstance());
 
         if (repoItemContainingFlatData == null) {
-            flatData = null;
+            flatDataSet = Collections.emptySet();
         } else {
-            flatData = repoItemContainingFlatData.getValue(attributeNameOfReferencedRepoItem, StringAttributeValueHandler.getInstance());
+            Set<String> flatDataTableSet = repoHandler.getInheritingValues(repoItemContainingFlatData, attributeNameOfReferencedRepoItem,
+                    StringAttributeValueHandler.getInstance());
+
+            for (String flatDataTableAsString : flatDataTableSet) {
+                String[] flatDataRecords = flatDataTableAsString.split("\n");
+                flatDataSet.addAll(Arrays.asList(flatDataRecords));
+            }
         }
 
-        return flatData;
+        return flatDataSet;
     }
 
 }

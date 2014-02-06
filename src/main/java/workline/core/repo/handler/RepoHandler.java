@@ -1,20 +1,34 @@
 package workline.core.repo.handler;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.SetJoin;
 
 import loggee.api.Logged;
 import vrds.model.EAttributeType;
 import vrds.model.IValueWrapper;
 import vrds.model.MetaAttribute;
+import vrds.model.MetaAttribute_;
 import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
-import vrds.model.meta.TODO;
-import vrds.model.meta.TODOTag;
+import vrds.model.RepoItemAttribute_;
+import vrds.model.RepoItemValue;
+import vrds.model.RepoItemValue_;
+import vrds.model.attributetype.AttributeValueHandler;
 import workline.core.api.internal.IRepoHandler;
+import workline.core.engine.constants.WorklineRepoConstants;
 import workline.core.util.Primary;
 
 @Logged
@@ -69,6 +83,16 @@ public class RepoHandler implements IRepoHandler {
     }
 
     @Override
+    public <T, W extends IValueWrapper<T>> T getNonInheritingValue(RepoItem repoItem, String attributeName, AttributeValueHandler<T, W> attributeValueHandler) {
+        return repoItem.getValue(attributeName, attributeValueHandler);
+    }
+
+    @Override
+    public <T, W extends IValueWrapper<T>> Set<T> getInheritingValues(RepoItem repoItem, String attributeName, AttributeValueHandler<T, W> attributeValueHandler) {
+        return repoItem.getValues(attributeName, attributeValueHandler);
+    }
+
+    @Override
     public MetaAttribute createMetaAttribute(RepoItemAttribute ownerAttribute, String name, EAttributeType type, Object value) {
         MetaAttribute metaAttribute = new MetaAttribute();
 
@@ -76,12 +100,30 @@ public class RepoHandler implements IRepoHandler {
         metaAttribute.setValue(value);
         metaAttribute.setOwnerAttribute(ownerAttribute);
 
+        if (ownerAttribute != null) {
+            ownerAttribute.getMetaAttributes().add(metaAttribute);
+        }
+
+        entityManager.persist(metaAttribute);
+
         return metaAttribute;
     }
 
     @Override
     public void setValue(RepoItem repoItem, String attributeName, Object value) {
         setValue(repoItem, null, attributeName, value);
+    }
+
+    @Override
+    public <T> void setSimpleValues(RepoItem repoItem, String attributeName, AttributeValueHandler<T, ?> attributeValueHandler, T ... values) {
+        RepoItemAttribute attribute = repoItem.getAttribute(attributeName);
+
+        if (values != null) {
+            attributeValueHandler.setSimpleValues(attribute, Arrays.asList(values));
+        } else {
+            List<T> emptyList = Collections.emptyList();
+            attributeValueHandler.setSimpleValues(attribute, emptyList);
+        }
     }
 
     @Override
@@ -97,11 +139,26 @@ public class RepoHandler implements IRepoHandler {
         }
     }
 
-    @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION })
     @Override
-    public Set<RepoItemAttribute> getInheritors() {
-        // FIXME
-        return null;
+    public Collection<RepoItemAttribute> getInheritors(RepoItem benefactor, String attributeName) {
+        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+        CriteriaQuery<RepoItemAttribute> query = criteriaBuilder.createQuery(RepoItemAttribute.class);
+        query.distinct(true);
+
+        Root<RepoItemAttribute> root = query.from(RepoItemAttribute.class);
+        SetJoin<RepoItemAttribute, MetaAttribute> joinInheritorMetaAttributes = root.join(RepoItemAttribute_.metaAttributes, JoinType.LEFT);
+        SetJoin<MetaAttribute, RepoItemValue> joinInheritorMetaAttributeRepoItemValues = joinInheritorMetaAttributes.join(MetaAttribute_.repoItemValues,
+                JoinType.LEFT);
+
+        Predicate predicate = criteriaBuilder.and(
+                criteriaBuilder.equal(root.get(RepoItemAttribute_.name), attributeName),
+                criteriaBuilder.equal(joinInheritorMetaAttributes.get(MetaAttribute_.name), WorklineRepoConstants.INHERITENCE_SOURCE_META_ATTRIBUTE_NAME),
+                criteriaBuilder.equal(joinInheritorMetaAttributeRepoItemValues.get(RepoItemValue_.value), benefactor));
+        query.select(root).where(predicate);
+
+        List<RepoItemAttribute> inheritorList = entityManager.createQuery(query).getResultList();
+
+        return inheritorList;
     }
 
     private RepoItemAttribute _addAttribute(RepoItem repoItem, String attributeName, EAttributeType type) {

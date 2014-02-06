@@ -1,6 +1,6 @@
 package workline.core.domain;
 
-import java.util.Set;
+import java.util.Collection;
 
 import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
@@ -41,7 +41,7 @@ public enum EInheritenceType {
     }
 
     protected void setInheritorValues(IRepoManager repoManager, IRepoHandler repoHandler, RepoItem repoItem, String attributeName, Object value) {
-        Set<RepoItemAttribute> inheritors = repoHandler.getInheritors();
+        Collection<RepoItemAttribute> inheritors = repoHandler.getInheritors(repoItem, attributeName);
         for (RepoItemAttribute attribute : inheritors) {
             EInheritenceType inheritorInheritenceType = getInheritorInheritenceType(repoManager, attribute);
             inheritorInheritenceType.setInheritingValue(repoManager, repoHandler, attribute.getRepoItem(), repoItem, attributeName, value);
@@ -54,7 +54,6 @@ public enum EInheritenceType {
         setValue(repoManager, repoHandler, repoItem, benefactor, attributeName, value);
     }
 
-    @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION })
     protected EInheritenceType getInheritorInheritenceType(IRepoManager repoManager, RepoItemAttribute inheritor) {
         EInheritenceType inheritorInheritenceType = repoManager.getInheritenceType(inheritor);
 

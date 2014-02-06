@@ -1,21 +1,22 @@
 package tmp;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.inject.Inject;
-import javax.persistence.EntityManager;
 
 import org.slf4j.Logger;
 
 import vrds.model.EAttributeType;
 import vrds.model.RepoItem;
+import vrds.model.RepoItemAttribute;
+import vrds.model.attributetype.AttributeValueHandler;
+import vrds.model.attributetype.RepoItemAttributeValueHandler;
+import vrds.model.attributetype.StringAttributeValueHandler;
 import workline.core.api.internal.IRepoHandler;
+import workline.core.domain.EInheritenceType;
 import workline.core.engine.constants.WorklineEngineConstants;
-import workline.core.util.Primary;
+import workline.core.repo.manager.IRepoManager;
 
 @Startup
 @Singleton
@@ -26,21 +27,76 @@ public class Initializer {
     private Logger logger;
 
     @Inject
-    @Primary
-    private EntityManager entityManager;
+    private IRepoManager repoManager;
     @Inject
     private IRepoHandler repoHandler;
 
     // TODO RepoItems should have an attribute 'types' that tags it as a certain type of RepoItem. E.g. 'accessRight'
     @PostConstruct
     public void init() {
-        String nameAttributeName4AccessRight = "name";
-        String additionalIOAttributeName4AccessRight = "(Additional input for Access right request Define request)";
-        String inputBehaviourSourceAttributeName4AccessRight = "Input behaviour for (Access right request).(Define request)";
+        RepoItem johnSmith = createRepoItem(
+                new RepoItemAttributeData<String>(REPO_ITEM_TYPE_ATTRIBUTE_NAME, StringAttributeValueHandler.getInstance(), "Person"),
+                new RepoItemAttributeData<String>("firstName", StringAttributeValueHandler.getInstance(), "John"),
+                new RepoItemAttributeData<String>("lastName", StringAttributeValueHandler.getInstance(), "Smith"));
+
+        logger.info("John Smith id : '" + johnSmith.getId() + "'");
 
         RepoItem testWorklineProcessRepoItem = new RepoItem();
         repoHandler.addAttribute(testWorklineProcessRepoItem, "name", EAttributeType.STRING, "testWorklineProcess");
-        entityManager.persist(testWorklineProcessRepoItem);
+        repoHandler.persistRepoItem(testWorklineProcessRepoItem);
+
+        String nameAttributeName4AccessRight = "name";
+        String accountAttributeName4AccessRight = "account";
+        String additionalIOAttributeName4AccessRight = "(Additional input for Access right request Define request)";
+        String inputBehaviourSourceAttributeName4AccessRight = "Input behaviour for (Access right request).(Define request)";
+        String approvalPointAttributeName4AccessRight = "approvalPoint";
+
+        String accessRightType = "accessRight";
+
+        String erpName = "erp";
+        String erpAdditionalIO = "issuedAccessRight;REPO::IssuedAccessRight;PROCESS;NEW;TODO\n"
+                + "account;REPO::AccessRight;PROCESS;TODO;issuedAccessRight.account\n"
+                + "recipient;REPO::Person;PROCESS;TODO;\n"
+                + "costCenter;INTEGER;PROCESS;TODO;issuedAccessRight.costCenter\n"
+                + "issuedAccessRightType;REPO::AccessRight;PROCESS;TODO;issuedAccessRight.type\n";
+        String erpApprovalPoint1 = "Recipient.Manager";
+        String erpApprovalPoint2 = "AccessRight.Owner";
+
+        String userAccountName = "userAccount";
+
+        String clerkName = "clerk";
+
+        RepoItem erp = createRepoItem(
+                new RepoItemAttributeData<String>(REPO_ITEM_TYPE_ATTRIBUTE_NAME, StringAttributeValueHandler.getInstance(), accessRightType),
+                new RepoItemAttributeData<String>(nameAttributeName4AccessRight, StringAttributeValueHandler.getInstance(), erpName),
+                new RepoItemAttributeData<String>(additionalIOAttributeName4AccessRight, StringAttributeValueHandler.getInstance()),
+                new RepoItemAttributeData<RepoItem>(accountAttributeName4AccessRight, RepoItemAttributeValueHandler.getInstance()),
+                new RepoItemAttributeData<String>(approvalPointAttributeName4AccessRight, StringAttributeValueHandler.getInstance()));
+
+        RepoItem userAccount = createRepoItem(
+                new RepoItemAttributeData<String>(REPO_ITEM_TYPE_ATTRIBUTE_NAME, StringAttributeValueHandler.getInstance(), accessRightType),
+                new RepoItemAttributeData<String>(nameAttributeName4AccessRight, StringAttributeValueHandler.getInstance(), userAccountName),
+                new RepoItemAttributeData<String>(additionalIOAttributeName4AccessRight, StringAttributeValueHandler.getInstance(), EInheritenceType.CUMULATE,
+                        erp),
+                new RepoItemAttributeData<RepoItem>(accountAttributeName4AccessRight, RepoItemAttributeValueHandler.getInstance(), EInheritenceType.INHERIT,
+                        erp),
+                new RepoItemAttributeData<String>(approvalPointAttributeName4AccessRight, StringAttributeValueHandler.getInstance(), EInheritenceType.CUMULATE,
+                        erp));
+
+        RepoItem clerk = createRepoItem(
+                new RepoItemAttributeData<String>(REPO_ITEM_TYPE_ATTRIBUTE_NAME, StringAttributeValueHandler.getInstance(), accessRightType),
+                new RepoItemAttributeData<String>(nameAttributeName4AccessRight, StringAttributeValueHandler.getInstance(), clerkName),
+                new RepoItemAttributeData<String>(additionalIOAttributeName4AccessRight, StringAttributeValueHandler.getInstance(), EInheritenceType.CUMULATE,
+                        erp),
+                new RepoItemAttributeData<RepoItem>(accountAttributeName4AccessRight, RepoItemAttributeValueHandler.getInstance(), EInheritenceType.INHERIT,
+                        erp),
+                new RepoItemAttributeData<String>(approvalPointAttributeName4AccessRight, StringAttributeValueHandler.getInstance(), EInheritenceType.CUMULATE,
+                        erp));
+
+        repoManager.setValue(erp, additionalIOAttributeName4AccessRight, erpAdditionalIO);
+        repoManager.setValue(erp, accountAttributeName4AccessRight, userAccount);
+        repoManager.setValue(erp, approvalPointAttributeName4AccessRight, erpApprovalPoint1);
+        // --
 
         String definitionName4DefineRequest = "defineRequest";
         String ioVariableSource4DefineRequest = "accessRight." + additionalIOAttributeName4AccessRight;
@@ -55,25 +111,30 @@ public class Initializer {
         String inputBehaviourSourceApprove = "";
         createTaskDefinition(definitionName4Approve, ioVariableSource4Approve, taskSpecificProcessVariablesDefinition4Approve, inputBehaviourSourceApprove);
 
-        String erpName = "ERP";
-        String erpType = "accessRight";
-        String erpAdditionalIO = "costCenter;REPO::AccessRight;PROCESS;TODO";
-
-        RepoItem erp = createRepoItem(Arrays.asList(new RepoItemAttributeData(REPO_ITEM_TYPE_ATTRIBUTE_NAME, EAttributeType.STRING, erpType),
-                new RepoItemAttributeData(nameAttributeName4AccessRight, EAttributeType.STRING, erpName), new RepoItemAttributeData(
-                        additionalIOAttributeName4AccessRight, EAttributeType.STRING, erpAdditionalIO)));
-
         logger.info("ERP id : '" + erp.getId() + "'");
     }
 
-    private RepoItem createRepoItem(Collection<RepoItemAttributeData> attributeDataCollection) {
+    private RepoItem createRepoItem(RepoItemAttributeData ... attributeDataCollection) {
         RepoItem repoItem = new RepoItem();
 
-        for (RepoItemAttributeData repoItemAttributeData : attributeDataCollection) {
-            repoHandler.addAttribute(repoItem, repoItemAttributeData.name, repoItemAttributeData.type, repoItemAttributeData.value);
-        }
+        repoHandler.persistRepoItem(repoItem);
 
-        entityManager.persist(repoItem);
+        for (RepoItemAttributeData repoItemAttributeData : attributeDataCollection) {
+            RepoItemAttribute attribute = repoHandler.addAttribute(repoItem, repoItemAttributeData.name,
+                    repoItemAttributeData.attributeValueHandler.getEAttributeType());
+
+            if (repoItemAttributeData.inheritenceType != null) {
+                repoManager.addInheritenceType(attribute, repoItemAttributeData.inheritenceType);
+            } else {
+                repoManager.addInheritenceType(attribute, EInheritenceType.OVERRIDE);
+            }
+            if (repoItemAttributeData.benefactor != null) {
+                repoManager.addBenefactor(attribute, repoItemAttributeData.benefactor);
+            }
+            if (repoItemAttributeData.value != null) {
+                repoManager.setValue(repoItem, repoItemAttributeData.name, repoItemAttributeData.value);
+            }
+        }
 
         return repoItem;
     }
@@ -87,17 +148,34 @@ public class Initializer {
                 taskSpecificProcessVariablesDefinition);
         repoHandler.addAttribute(task, WorklineEngineConstants.INPUT_BEHAVIOUR_SOURCE, EAttributeType.STRING, inputBehaviourSource);
 
-        entityManager.persist(task);
+        repoHandler.persistRepoItem(task);
     }
 
-    private class RepoItemAttributeData {
+    private class RepoItemAttributeData<T> {
         String name;
-        EAttributeType type;
-        Object value;
+        AttributeValueHandler<T, ?> attributeValueHandler;
+        T value;
+        EInheritenceType inheritenceType;
+        RepoItem benefactor;
 
-        public RepoItemAttributeData(String name, EAttributeType type, Object value) {
+        public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler) {
+            this(name, attributeValueHandler, null, null, null);
+        }
+
+        public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler, T value) {
+            this(name, attributeValueHandler, null, null, value);
+        }
+
+        public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler, EInheritenceType inheritenceType, RepoItem benefactor) {
+            this(name, attributeValueHandler, inheritenceType, benefactor, null);
+        }
+
+        public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler, EInheritenceType inheritenceType, RepoItem benefactor,
+                T value) {
             this.name = name;
-            this.type = type;
+            this.attributeValueHandler = attributeValueHandler;
+            this.inheritenceType = inheritenceType;
+            this.benefactor = benefactor;
             this.value = value;
         }
     }

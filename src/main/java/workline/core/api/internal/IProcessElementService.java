@@ -8,5 +8,5 @@ import workline.core.domain.ProcessElementVariableDefinition;
 public interface IProcessElementService {
     RepoItemAttribute addVariableToProcessElement(RepoItem businessTask, ProcessElementVariableDefinition variableDefinition, MetaAttribute ... metaAttributes);
 
-    void copyProcessElementVariable(RepoItem fromProcessElement, RepoItem toProcessElement, ProcessElementVariableDefinition processVariableDefinition);
+    void copyProcessElementVariableValue(RepoItem fromProcessElement, RepoItem toProcessElement, ProcessElementVariableDefinition processVariableDefinition);
 }

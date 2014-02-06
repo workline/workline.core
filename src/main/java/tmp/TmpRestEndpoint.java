@@ -22,6 +22,20 @@ public class TmpRestEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public Object setStringValue(@PathParam("repoItemId") Long repoItemId, @PathParam("benefactorRepoItemId") Long benefactorRepoItemId,
             @PathParam("attributeName") String attributeName, @PathParam("stringValue") String stringValue) {
-        return tmpService.setStringValue(repoItemId, benefactorRepoItemId, attributeName, stringValue);
+
+        tmpService.setStringValue(repoItemId, benefactorRepoItemId, attributeName, stringValue);
+
+        return true;
+    }
+
+    @GET
+    @Path("/setStringValue/{repoItemId}/{attributeName}/{stringValue}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Object setStringValue(@PathParam("repoItemId") Long repoItemId, @PathParam("attributeName") String attributeName,
+            @PathParam("stringValue") String stringValue) {
+
+        tmpService.setStringValue(repoItemId, attributeName, stringValue);
+
+        return true;
     }
 }

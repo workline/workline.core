@@ -2,26 +2,27 @@ package tmp;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-import javax.persistence.EntityManager;
 
 import vrds.model.RepoItem;
 import workline.core.api.internal.IRepoHandler;
-import workline.core.util.Primary;
+import workline.core.repo.manager.IRepoManager;
 
 @Stateless
 public class TmpService {
     @Inject
     private IRepoHandler repoHandler;
     @Inject
-    @Primary
-    private EntityManager entityManager;
+    private IRepoManager repoManager;
 
-    public Object setStringValue(Long repoItemId, Long benefactorRepoItemId, String attributeName, String stringValue) {
+    public void setStringValue(Long repoItemId, Long benefactorRepoItemId, String attributeName, String stringValue) {
         RepoItem repoItem = repoHandler.getRepoItem(repoItemId);
         RepoItem benefactor = repoHandler.getRepoItem(benefactorRepoItemId);
 
         repoHandler.setValue(repoItem, benefactor, attributeName, stringValue);
+    }
 
-        return true;
+    public void setStringValue(Long repoItemId, String attributeName, String stringValue) {
+        RepoItem repoItem = repoHandler.getRepoItem(repoItemId);
+        repoManager.setValue(repoItem, attributeName, stringValue);
     }
 }

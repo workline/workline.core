@@ -27,18 +27,14 @@ import org.slf4j.Logger;
 
 import vrds.model.EAttributeType;
 import vrds.model.RepoItem;
-import vrds.model.meta.TODO;
-import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IBasicWorkItemHandler;
 import workline.core.api.internal.IEngine;
 import workline.core.api.internal.IRepoHandler;
 import workline.core.domain.ProcessData;
 import workline.core.engine.constants.WorklineEngineConstants;
-import workline.core.util.Primary;
 import workline.core.util.ProcessEngine;
 import workline.core.workitem.DefaultBasicWorkItemHandler;
 
-@TODO(tags = { TODOTag.SPECIFICATION_REQUIRED }, value = "Issued AccessRight?")
 @Logged
 @Stateless
 public class Engine implements IEngine {
@@ -46,10 +42,6 @@ public class Engine implements IEngine {
     private static final String PROCESS_NAME = "testWorklineProcess";
     private static final String PROCESS_EXTENSION = "bpmn2";
     private static final String BASIC_WORK_ITEM_NAME = "PIO";
-
-    @Inject
-    @Primary
-    private EntityManager entityManager;
 
     @Inject
     @ProcessEngine
@@ -144,11 +136,11 @@ public class Engine implements IEngine {
         return environment;
     }
 
-    // TODO Maybe task specific process variables with default values should be created at this point
+    // TODO Maybe task specific process variables with default value should be created at this point
     private RepoItem createProcessRepoItem() {
         RepoItem processRepoItem = new RepoItem();
 
-        entityManager.persist(processRepoItem);
+        repoHandler.persistRepoItem(processRepoItem);
 
         return processRepoItem;
     }

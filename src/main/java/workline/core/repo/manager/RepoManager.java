@@ -4,28 +4,23 @@ import java.util.Set;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-import javax.persistence.EntityManager;
 
 import loggee.api.Logged;
+import vrds.model.EAttributeType;
+import vrds.model.MetaAttribute;
 import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
 import vrds.model.attributetype.StringAttributeValueHandler;
-import vrds.model.meta.TODO;
-import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IConsistencyChecker;
 import workline.core.api.internal.IRepoHandler;
 import workline.core.consitencycheck.Dummy;
 import workline.core.domain.EInheritenceType;
 import workline.core.domain.ERepoItemState;
 import workline.core.engine.constants.WorklineRepoConstants;
-import workline.core.util.Primary;
 
 @Logged
 @Stateless
 public class RepoManager implements IRepoManager {
-    @Inject
-    @Primary
-    private EntityManager entityManager;
     @Inject
     private IRepoHandler repoHandler;
 
@@ -34,25 +29,69 @@ public class RepoManager implements IRepoManager {
     private IConsistencyChecker consistencyChecker;
 
     @Override
-    @TODO(tags = { TODOTag.MISSING_IMPLEMENTATION, TODOTag.INHERITENCE })
     public void setValue(RepoItem repoItem, String attributeName, Object value) {
         RepoItemAttribute attribute = repoItem.getAttribute(attributeName);
-        getInheritenceType(attribute).setValue(this, repoHandler, repoItem, attributeName, value);
+
+        EInheritenceType inheritenceType = getInheritenceType(attribute);
+
+        inheritenceType.setValue(this, repoHandler, repoItem, attributeName, value);
 
         assertConsistencyIfActive(repoItem);
     }
 
     @Override
+    public RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, EInheritenceType inheritenceType, RepoItem benefactor,
+            Object value) {
+
+        RepoItemAttribute attribute = repoHandler.addAttribute(repoItem, attributeName, type, value);
+
+        addInheritenceType(attribute, inheritenceType);
+        addBenefactor(attribute, benefactor);
+
+        return attribute;
+    }
+
+    @Override
+    public MetaAttribute addInheritenceType(RepoItemAttribute ownerAttribute, EInheritenceType inheritenceType) {
+        return repoHandler.createMetaAttribute(ownerAttribute, WorklineRepoConstants.INHERITENCE_TYPE_META_ATTRIBUTE_NAME, EAttributeType.STRING,
+                inheritenceType.toString());
+    }
+
+    @Override
+    public MetaAttribute addBenefactor(RepoItemAttribute ownerAttribute, RepoItem benefactor) {
+        return repoHandler.createMetaAttribute(ownerAttribute, WorklineRepoConstants.INHERITENCE_SOURCE_META_ATTRIBUTE_NAME, EAttributeType.REPO_ITEM,
+                benefactor);
+    }
+
+    @Override
     public EInheritenceType getInheritenceType(RepoItemAttribute attribute) {
-        EInheritenceType inheritenceType = EInheritenceType.valueOf(attribute.getMetaAttributeValue(WorklineRepoConstants.INHERITENCE_TYPE_META_ATTRIBUTE_NAME,
-                StringAttributeValueHandler.getInstance()));
+        EInheritenceType inheritenceType;
+
+        String inheritenceTypeAsString = attribute.getMetaAttributeValue(WorklineRepoConstants.INHERITENCE_TYPE_META_ATTRIBUTE_NAME,
+                StringAttributeValueHandler.getInstance());
+
+        if (inheritenceTypeAsString == null) {
+            inheritenceType = EInheritenceType.OVERRIDE;
+        } else {
+            inheritenceType = EInheritenceType.valueOf(inheritenceTypeAsString);
+        }
 
         return inheritenceType;
     }
 
     @Override
     public ERepoItemState getState(RepoItem repoItem) {
-        ERepoItemState state = ERepoItemState.valueOf(repoItem.getValue(WorklineRepoConstants.STATE_ATTRIBUTE_NAME, StringAttributeValueHandler.getInstance()));
+        ERepoItemState state;
+
+        String statusAsString = repoHandler.getNonInheritingValue(repoItem, WorklineRepoConstants.STATE_ATTRIBUTE_NAME,
+                StringAttributeValueHandler.getInstance());
+
+        if (statusAsString == null) {
+            state = null;
+        } else {
+            state = ERepoItemState.valueOf(statusAsString);
+        }
+
         return state;
     }
 
@@ -71,7 +110,8 @@ public class RepoManager implements IRepoManager {
 
     @Override
     public void checkConsistency(RepoItem repoItem) {
-        Set<String> consistencyCheckerIds = repoItem.getValues(WorklineRepoConstants.CONSISTENCY_CHECKER_ATTRIBUTE_NAME, StringAttributeValueHandler.getInstance());
+        Set<String> consistencyCheckerIds = repoItem.getValues(WorklineRepoConstants.CONSISTENCY_CHECKER_ATTRIBUTE_NAME,
+                StringAttributeValueHandler.getInstance());
         for (String consistencyCheckerId : consistencyCheckerIds) {
             boolean consistent = consistencyChecker.checkConsistency(consistencyCheckerId, repoItem);
             if (!consistent) {

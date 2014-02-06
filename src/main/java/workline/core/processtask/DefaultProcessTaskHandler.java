@@ -60,7 +60,7 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
             // TODO Do we need this? The process task should already know about the process.
             repoHandler.addAttribute(businessTask, WorklineEngineConstants.PROCESS, EAttributeType.REPO_ITEM, process);
             repoHandler.addAttribute(businessTask, WorklineEngineConstants.PROCESS_TASK, EAttributeType.REPO_ITEM, processTask);
-            businessTaskHandler.initTask(process, businessTask);
+            businessTaskHandler.initBusinessTask(process, businessTask);
         }
 
     }
@@ -73,7 +73,8 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
         // Different logic must be called depending on the task.
         if (isLast(businessTaskId)) {
             RepoItem businessTask = getBusinessTask(businessTaskId);
-            RepoItem processTask = businessTask.getValue(WorklineEngineConstants.PROCESS_TASK, RepoItemAttributeValueHandler.getInstance());
+            RepoItem processTask = repoHandler.getNonInheritingValue(businessTask, WorklineEngineConstants.PROCESS_TASK,
+                    RepoItemAttributeValueHandler.getInstance());
 
             finishProcessTask(processTask);
         }
@@ -96,22 +97,23 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
     }
 
     private void createTaskSpecificProcessVariables(RepoItem process, RepoItem businessTaskDefinition) {
-        String taskSpecificProcessVariableDefinitionData = businessTaskDefinition.getValue(WorklineEngineConstants.TASK_SPECIFIC_PROCESS_VARIABLES_DEFINITION,
-                StringAttributeValueHandler.getInstance());
+        String taskSpecificProcessVariableDefinitionData = repoHandler.getNonInheritingValue(businessTaskDefinition,
+                WorklineEngineConstants.TASK_SPECIFIC_PROCESS_VARIABLES_DEFINITION, StringAttributeValueHandler.getInstance());
         List<ProcessElementVariableDefinition> taskSpecificProcessVariableDefinitionList = businessTaskHandler
                 .parseIoVariableSourceData(taskSpecificProcessVariableDefinitionData);
 
         for (ProcessElementVariableDefinition taskSpecificProcessVariableDefinition : taskSpecificProcessVariableDefinitionList) {
             if (taskSpecificProcessVariableDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
                 processElementService.addVariableToProcessElement(process, taskSpecificProcessVariableDefinition);
-            } else {
-                // Nothing to do. TASK scoped variables are added to the business tasks later.
             }
+            // else {
+            // // Nothing to do. TASK scoped variables are added to the business tasks later.
+            // }
         }
     }
 
     @TODO(
-            tags = { TODOTag.SPECIFICATION_REQUIRED },
+            tags = { TODOTag.MISSING_IMPLEMENTATION, TODOTag.SPECIFICATION_REQUIRED },
             value = "How to create business tasks? | A business task needs to be created for every participating actor/actor group.")
     private List<RepoItem> createBusinessTasks(String taskName, RepoItem businessTaskDefinition) {
         // TODO Auto-generated method stub
@@ -136,11 +138,13 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
     }
 
     private void finishProcessTask(RepoItem processTask) {
-        Long workflowTaskId = processTask.getValue(WorklineEngineConstants.WORKFLOW_TASK_ID, IntegerAttributeValueHandler.getInstance());
+        Long workflowTaskId = repoHandler.getNonInheritingValue(processTask, WorklineEngineConstants.WORKFLOW_TASK_ID,
+                IntegerAttributeValueHandler.getInstance());
 
-        RepoItem process = processTask.getValue(WorklineEngineConstants.PROCESS, RepoItemAttributeValueHandler.getInstance());
-        Long processInstanceId = process.getValue(WorklineEngineConstants.PROCESS_INSTANCE_ID, IntegerAttributeValueHandler.getInstance());
-        Long sessionId = process.getValue(WorklineEngineConstants.SESSION_ID, IntegerAttributeValueHandler.getInstance());
+        RepoItem process = repoHandler.getNonInheritingValue(processTask, WorklineEngineConstants.PROCESS, RepoItemAttributeValueHandler.getInstance());
+        Long processInstanceId = repoHandler.getNonInheritingValue(process, WorklineEngineConstants.PROCESS_INSTANCE_ID,
+                IntegerAttributeValueHandler.getInstance());
+        Long sessionId = repoHandler.getNonInheritingValue(process, WorklineEngineConstants.SESSION_ID, IntegerAttributeValueHandler.getInstance());
 
         engine.completeWorkItem((int) (long) sessionId, processInstanceId, workflowTaskId);
     }
