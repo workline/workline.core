@@ -1,4 +1,4 @@
-package workline.core.repo.manager;
+package workline.core.api.internal;
 
 import vrds.model.EAttributeType;
 import vrds.model.MetaAttribute;
@@ -11,12 +11,12 @@ public interface IRepoManager {
 
     void setValue(RepoItem repoItem, String attributeName, Object value);
 
-    RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, EInheritenceType inheritenceType, RepoItem benefactor,
+    RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, EInheritenceType inheritenceType, RepoItem inheritenceSource,
             Object value);
 
     MetaAttribute addInheritenceType(RepoItemAttribute ownerAttribute, EInheritenceType inheritenceType);
 
-    MetaAttribute addBenefactor(RepoItemAttribute ownerAttribute, RepoItem benefactor);
+    MetaAttribute addInheritenceSource(RepoItemAttribute ownerAttribute, RepoItem inheritenceSource);
 
     ERepoItemState getState(RepoItem repoItem);
 

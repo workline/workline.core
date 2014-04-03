@@ -1,6 +1,7 @@
 package workline.core.processtask;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.ejb.Stateless;
@@ -9,8 +10,10 @@ import javax.persistence.EntityManager;
 
 import loggee.api.Logged;
 import vrds.model.EAttributeType;
+import vrds.model.IValueWrapper;
 import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
+import vrds.model.attributetype.AttributeValueHandler;
 import vrds.model.attributetype.IntegerAttributeValueHandler;
 import vrds.model.attributetype.RepoItemAttributeValueHandler;
 import vrds.model.attributetype.StringAttributeValueHandler;
@@ -18,11 +21,12 @@ import vrds.model.meta.TODO;
 import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IBusinessTaskHandler;
 import workline.core.api.internal.IEngine;
+import workline.core.api.internal.IIoVariableSourceDataParser;
 import workline.core.api.internal.IProcessElementService;
 import workline.core.api.internal.IProcessTaskHandler;
 import workline.core.api.internal.IRepoHandler;
 import workline.core.domain.EInputVariableScope;
-import workline.core.domain.ProcessElementVariableDefinition;
+import workline.core.domain.ProcessElementVariableMappingDefinition;
 import workline.core.engine.constants.WorklineEngineConstants;
 import workline.core.engine.constants.WorklineEngineQueries;
 import workline.core.util.Primary;
@@ -38,6 +42,8 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
     private IProcessElementService processElementService;
     @Inject
     private IEngine engine;
+    @Inject
+    private IIoVariableSourceDataParser ioVariableSourceDataParser;
 
     @Inject
     @Primary
@@ -57,7 +63,6 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
         addBusinessTasksToProcessTask(processTask, listOfbusinessTasks);
 
         for (RepoItem businessTask : listOfbusinessTasks) {
-            // TODO Do we need this? The process task should already know about the process.
             repoHandler.addAttribute(businessTask, WorklineEngineConstants.PROCESS, EAttributeType.REPO_ITEM, process);
             repoHandler.addAttribute(businessTask, WorklineEngineConstants.PROCESS_TASK, EAttributeType.REPO_ITEM, processTask);
             businessTaskHandler.initBusinessTask(process, businessTask);
@@ -83,7 +88,11 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
     @Override
     public Object readVariable(Long businessTaskId, String variableName) {
         return businessTaskHandler.readVariable(businessTaskId, variableName);
+    }
 
+    @Override
+    public <T, W extends IValueWrapper<T>> T readVariable(Long businessTaskId, String variableName, AttributeValueHandler<T, W> attributeValueHandler) {
+        return businessTaskHandler.readVariable(businessTaskId, variableName, attributeValueHandler);
     }
 
     @Override
@@ -96,15 +105,25 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
         businessTaskHandler.writeVariable(businessTaskId, variableName, value);
     }
 
-    private void createTaskSpecificProcessVariables(RepoItem process, RepoItem businessTaskDefinition) {
-        String taskSpecificProcessVariableDefinitionData = repoHandler.getNonInheritingValue(businessTaskDefinition,
-                WorklineEngineConstants.TASK_SPECIFIC_PROCESS_VARIABLES_DEFINITION, StringAttributeValueHandler.getInstance());
-        List<ProcessElementVariableDefinition> taskSpecificProcessVariableDefinitionList = businessTaskHandler
-                .parseIoVariableSourceData(taskSpecificProcessVariableDefinitionData);
+    @Override
+    public void modifyVariable(Long businessTaskId, String variableName, String attributeName, Long repoItemId) {
+        businessTaskHandler.modifyVariable(businessTaskId, variableName, attributeName, repoItemId);
+    }
 
-        for (ProcessElementVariableDefinition taskSpecificProcessVariableDefinition : taskSpecificProcessVariableDefinitionList) {
-            if (taskSpecificProcessVariableDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
-                processElementService.addVariableToProcessElement(process, taskSpecificProcessVariableDefinition);
+    @Override
+    public void modifyVariable(Long businessTaskId, String variableName, String attributeName, Object value) {
+        businessTaskHandler.modifyVariable(businessTaskId, variableName, attributeName, value);
+    }
+
+    private void createTaskSpecificProcessVariables(RepoItem process, RepoItem businessTaskDefinition) {
+        String taskSpecificProcessVariableMappingDefinitionData = repoHandler.getNonInheritingValue(businessTaskDefinition,
+                WorklineEngineConstants.TASK_SPECIFIC_PROCESS_VARIABLES_DEFINITION, StringAttributeValueHandler.getInstance());
+        List<ProcessElementVariableMappingDefinition> taskSpecificProcessVariableMappingDefinitionList = ioVariableSourceDataParser
+                .parseIoVariableSourceData(Collections.singleton(taskSpecificProcessVariableMappingDefinitionData));
+
+        for (ProcessElementVariableMappingDefinition taskSpecificProcessVariableMappingDefinition : taskSpecificProcessVariableMappingDefinitionList) {
+            if (taskSpecificProcessVariableMappingDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
+                processElementService.processVariableMappingForProcessElement(process, taskSpecificProcessVariableMappingDefinition);
             }
             // else {
             // // Nothing to do. TASK scoped variables are added to the business tasks later.
@@ -162,9 +181,9 @@ public class DefaultProcessTaskHandler implements IProcessTaskHandler {
     }
 
     private void addBusinessTasksToProcessTask(RepoItem processTask, List<RepoItem> listOfbusinessTasks) {
-        RepoItemAttribute attrbiuteBusinessTasksOfProcessTask = repoHandler.addAttribute(processTask, WorklineEngineConstants.BUSINESS_TASKS,
+        RepoItemAttribute attributeBusinessTasksOfProcessTask = repoHandler.addAttribute(processTask, WorklineEngineConstants.BUSINESS_TASKS,
                 EAttributeType.REPO_ITEM);
-        RepoItemAttributeValueHandler.getInstance().setSimpleValues(attrbiuteBusinessTasksOfProcessTask, listOfbusinessTasks);
+        RepoItemAttributeValueHandler.getInstance().setSimpleValues(attributeBusinessTasksOfProcessTask, listOfbusinessTasks);
     }
 
     private RepoItem getProcess(Long processRepoItemId) {

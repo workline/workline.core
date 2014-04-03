@@ -35,10 +35,10 @@ public interface IRepoHandler {
 
     void setValue(RepoItem repoItem, String attributeName, Object value);
 
-    void setValue(RepoItem repoItem, RepoItem benefactor, String attributeName, Object value);
+    void setValue(RepoItem repoItem, RepoItem inheritenceSource, String attributeName, Object value);
 
     <T> void setSimpleValues(RepoItem repoItem, String attributeName, AttributeValueHandler<T, ?> attributeValueHandler, T ... values);
 
-    Collection<RepoItemAttribute> getInheritors(RepoItem benefactor, String attributeName);
+    Collection<RepoItemAttribute> getInheritors(RepoItem inheritenceSource, String attributeName);
 
 }

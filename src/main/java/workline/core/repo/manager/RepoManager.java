@@ -13,6 +13,7 @@ import vrds.model.RepoItemAttribute;
 import vrds.model.attributetype.StringAttributeValueHandler;
 import workline.core.api.internal.IConsistencyChecker;
 import workline.core.api.internal.IRepoHandler;
+import workline.core.api.internal.IRepoManager;
 import workline.core.consitencycheck.Dummy;
 import workline.core.domain.EInheritenceType;
 import workline.core.domain.ERepoItemState;
@@ -40,13 +41,14 @@ public class RepoManager implements IRepoManager {
     }
 
     @Override
-    public RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, EInheritenceType inheritenceType, RepoItem benefactor,
+    public RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, EInheritenceType inheritenceType,
+            RepoItem inheritenceSource,
             Object value) {
 
         RepoItemAttribute attribute = repoHandler.addAttribute(repoItem, attributeName, type, value);
 
         addInheritenceType(attribute, inheritenceType);
-        addBenefactor(attribute, benefactor);
+        addInheritenceSource(attribute, inheritenceSource);
 
         return attribute;
     }
@@ -58,9 +60,9 @@ public class RepoManager implements IRepoManager {
     }
 
     @Override
-    public MetaAttribute addBenefactor(RepoItemAttribute ownerAttribute, RepoItem benefactor) {
+    public MetaAttribute addInheritenceSource(RepoItemAttribute ownerAttribute, RepoItem inheritenceSource) {
         return repoHandler.createMetaAttribute(ownerAttribute, WorklineRepoConstants.INHERITENCE_SOURCE_META_ATTRIBUTE_NAME, EAttributeType.REPO_ITEM,
-                benefactor);
+                inheritenceSource);
     }
 
     @Override

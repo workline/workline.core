@@ -1,6 +1,5 @@
 package workline.core.businesstask;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -11,24 +10,25 @@ import javax.inject.Inject;
 
 import loggee.api.Logged;
 import vrds.model.EAttributeType;
+import vrds.model.IValueWrapper;
 import vrds.model.MetaAttribute;
 import vrds.model.RepoItem;
 import vrds.model.RepoItemAttribute;
+import vrds.model.attributetype.AttributeValueHandler;
 import vrds.model.attributetype.RepoItemAttributeValueHandler;
 import vrds.model.attributetype.StringAttributeValueHandler;
 import vrds.model.meta.TODO;
 import vrds.model.meta.TODOTag;
 import workline.core.api.internal.IBusinessTaskHandler;
+import workline.core.api.internal.IIoVariableSourceDataParser;
 import workline.core.api.internal.IProcessElementService;
 import workline.core.api.internal.IRepoHandler;
+import workline.core.api.internal.IRepoManager;
 import workline.core.domain.EInputVariableScope;
-import workline.core.domain.EInputVariableType;
 import workline.core.domain.InputBehaviourLogicURI;
-import workline.core.domain.InputVariableTypeData;
 import workline.core.domain.MappedToData;
-import workline.core.domain.ProcessElementVariableDefinition;
+import workline.core.domain.ProcessElementVariableMappingDefinition;
 import workline.core.engine.constants.WorklineEngineConstants;
-import workline.core.repo.manager.IRepoManager;
 
 @Logged
 public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
@@ -38,6 +38,8 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     private IRepoHandler repoHandler;
     @Inject
     private IProcessElementService processElementService;
+    @Inject
+    private IIoVariableSourceDataParser ioVariableSourceDataParser;
 
     @Override
     public void initBusinessTask(RepoItem process, RepoItem businessTask) {
@@ -54,10 +56,17 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     }
 
     @Override
-    public void writeVariable(Long businessTaskId, String variableName, Long repoItemId) {
-        RepoItem repoItem = repoHandler.getRepoItem(repoItemId);
+    public <T, W extends IValueWrapper<T>> T readVariable(Long businessTaskId, String variableName, AttributeValueHandler<T, W> attributeValueHandler) {
+        RepoItem businessTask = repoHandler.getRepoItem(businessTaskId);
 
-        writeVariable(businessTaskId, variableName, repoItem);
+        return businessTask.getValue(variableName, attributeValueHandler);
+    }
+
+    @Override
+    public void writeVariable(Long businessTaskId, String variableName, Long repoItemId) {
+        RepoItem value = repoHandler.getRepoItem(repoItemId);
+
+        writeVariable(businessTaskId, variableName, value);
     }
 
     @Override
@@ -66,13 +75,28 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
 
         repoManager.setValue(businessTask, variableName, value);
 
-        RepoItemAttribute variable = businessTask.getAttribute(variableName);
-        setMappedVariableIfNeeded(variable, value, businessTask);
+        postProcessVariableEditing(businessTask, variableName, value);
+    }
 
-        runInputBehaviourLogic(businessTask);
+    @Override
+    public void modifyVariable(Long businessTaskId, String variableName, String attributeName, Long repoItemId) {
+        RepoItem value = repoHandler.getRepoItem(repoItemId);
 
-        RepoItem process = repoHandler.getNonInheritingValue(businessTask, WorklineEngineConstants.PROCESS, RepoItemAttributeValueHandler.getInstance());
-        setContextDependentIO(process, businessTask);
+        modifyVariable(businessTaskId, variableName, attributeName, value);
+    }
+
+    @TODO(
+            tags = { TODOTag.INHERITENCE, TODOTag.SPECIFICATION_REQUIRED },
+            value = "Is the attribute of the RepoItem stored as a variable alway a non-inheriting one?")
+    @Override
+    public void modifyVariable(Long businessTaskId, String variableName, String attributeName, Object value) {
+        RepoItem businessTask = repoHandler.getRepoItem(businessTaskId);
+
+        // TODO Is it always non-inheriting?
+        RepoItem variableRepoItem = repoHandler.getNonInheritingValue(businessTask, variableName, RepoItemAttributeValueHandler.getInstance());
+        repoManager.setValue(variableRepoItem, attributeName, value);
+
+        postProcessVariableEditing(businessTask, variableName, value);
     }
 
     @Override
@@ -81,67 +105,17 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         close(businessTask);
     }
 
-    public List<ProcessElementVariableDefinition> parseIoVariableSourceData(String ioFlatDataSet) {
-        return parseIoVariableSourceData(Collections.singleton(ioFlatDataSet));
+    private void postProcessVariableEditing(RepoItem businessTask, String variableName, Object value) {
+        setMappedToValuesIfNeeded(businessTask, variableName, value);
+
+        runInputBehaviourLogic(businessTask);
+
+        setContextDependentIO(businessTask);
     }
 
-    @TODO(
-            tags = { TODOTag.SPECIFICATION_REQUIRED },
-            value = "How should accessRight RepoItems look like? What to do with the parsed data (inputVariableScope, inputVariableSelectionData)?")
-    public List<ProcessElementVariableDefinition> parseIoVariableSourceData(Set<String> ioFlatDataSet) {
-        if (ioFlatDataSet == null || ioFlatDataSet.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<ProcessElementVariableDefinition> processElementVariableDefinitions = new ArrayList<>();
-
-        for (String ioFlatData : ioFlatDataSet) {
-            String[] ioFlatDataTokens = ioFlatData.split(";");
-            String variableName = ioFlatDataTokens[0];
-            String typeDataAsString = ioFlatDataTokens[1];
-            String scopeAsString = ioFlatDataTokens[2];
-            String inputVariableSelectionQuery = ioFlatDataTokens[3];
-            String mappedToExpression;
-            if (ioFlatDataTokens.length > 4) {
-                mappedToExpression = ioFlatDataTokens[4];
-            } else {
-                mappedToExpression = null;
-            }
-
-            String typeAsString;
-            String typeRepoName;
-            if (typeDataAsString.contains("::")) {
-                String[] typeDataTokens = typeDataAsString.split("::");
-                typeAsString = typeDataTokens[0];
-                typeRepoName = typeDataTokens[1];
-            } else {
-                typeAsString = typeDataAsString;
-                typeRepoName = null;
-            }
-
-            EInputVariableScope inputVariableScope = EInputVariableScope.valueOf(scopeAsString);
-            EInputVariableType inputVariableType = EInputVariableType.valueOf(typeAsString);
-
-            ProcessElementVariableDefinition processElementVariableDefinition = new ProcessElementVariableDefinition();
-
-            InputVariableTypeData type = new InputVariableTypeData();
-            type.setInputVariableType(inputVariableType);
-            type.setRepoName(typeRepoName);
-
-            processElementVariableDefinition.setName(variableName);
-            processElementVariableDefinition.setType(type);
-            processElementVariableDefinition.setInputVariableScope(inputVariableScope);
-            processElementVariableDefinition.setInputVariableSelectionQuery(inputVariableSelectionQuery);
-            processElementVariableDefinition.setMappedToExpression(mappedToExpression);
-
-            processElementVariableDefinitions.add(processElementVariableDefinition);
-        }
-
-        return processElementVariableDefinitions;
-    }
-
-    private void setMappedVariableIfNeeded(RepoItemAttribute variable, Object value, RepoItem businessTask) {
-        String mappedToExpression = variable.getMetaAttributeValue(WorklineEngineConstants.VARIABLE_MAPPED_TO_EXPRESSION,
+    private void setMappedToValuesIfNeeded(RepoItem businessTask, String variableName, Object value) {
+        RepoItemAttribute attributeStoringVariable = businessTask.getAttribute(variableName);
+        String mappedToExpression = attributeStoringVariable.getMetaAttributeValue(WorklineEngineConstants.VARIABLE_MAPPED_TO_EXPRESSION,
                 StringAttributeValueHandler.getInstance());
 
         if (mappedToExpression != null) {
@@ -151,8 +125,9 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
                     RepoItemAttributeValueHandler.getInstance());
             String variableNameOfVariable = mappedToData.getVariableNameOfVariable();
 
+            // TODO Need to make sure that postProcessVariableEditing is called recursively
             if (mappedToVariable.getAttribute(variableNameOfVariable) == null) {
-                repoHandler.addAttribute(mappedToVariable, variableNameOfVariable, variable.getType(), value);
+                repoHandler.addAttribute(mappedToVariable, variableNameOfVariable, attributeStoringVariable.getType(), value);
             } else {
                 repoManager.setValue(mappedToVariable, variableNameOfVariable, value);
             }
@@ -181,15 +156,16 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     private void initialIO(RepoItem process, RepoItem businessTask) {
         RepoItem businessTaskDefinition = getBusinessTaskDefinition(businessTask);
 
-        String taskSpecificProcessVariableDefinitionData = repoHandler.getNonInheritingValue(businessTaskDefinition,
+        String taskSpecificProcessVariableMappingDefinitionData = repoHandler.getNonInheritingValue(businessTaskDefinition,
                 WorklineEngineConstants.TASK_SPECIFIC_PROCESS_VARIABLES_DEFINITION, StringAttributeValueHandler.getInstance());
-        List<ProcessElementVariableDefinition> taskSpecificProcessVariableDefinitionList = parseIoVariableSourceData(taskSpecificProcessVariableDefinitionData);
+        List<ProcessElementVariableMappingDefinition> taskSpecificProcessVariableMappingDefinitionList = ioVariableSourceDataParser
+                .parseIoVariableSourceData(Collections.singleton(taskSpecificProcessVariableMappingDefinitionData));
 
-        for (ProcessElementVariableDefinition taskSpecificProcessVariableDefinition : taskSpecificProcessVariableDefinitionList) {
-            processElementService.addVariableToProcessElement(businessTask, taskSpecificProcessVariableDefinition);
+        for (ProcessElementVariableMappingDefinition taskSpecificProcessVariableMappingDefinition : taskSpecificProcessVariableMappingDefinitionList) {
+            processElementService.processVariableMappingForProcessElement(businessTask, taskSpecificProcessVariableMappingDefinition);
 
-            if (taskSpecificProcessVariableDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
-                processElementService.copyProcessElementVariableValue(process, businessTask, taskSpecificProcessVariableDefinition);
+            if (taskSpecificProcessVariableMappingDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
+                processElementService.copyProcessElementVariableValue(process, businessTask, taskSpecificProcessVariableMappingDefinition);
             }
         }
 
@@ -210,26 +186,35 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
 
     }
 
+    private void setContextDependentIO(RepoItem businessTask) {
+        RepoItem process = repoHandler.getNonInheritingValue(businessTask, WorklineEngineConstants.PROCESS, RepoItemAttributeValueHandler.getInstance());
+
+        setContextDependentIO(process, businessTask);
+    }
+
+    @TODO(tags = { TODOTag.OPTIMIZATION_TARGET_CANDIDATE })
     private void setContextDependentIO(RepoItem process, RepoItem businessTask) {
         RepoItem businessTaskDefinition = getBusinessTaskDefinition(businessTask);
 
         String ioVariableSourceExpression = repoHandler.getNonInheritingValue(businessTaskDefinition, WorklineEngineConstants.IO_VARIABLE_SOURCE,
                 StringAttributeValueHandler.getInstance());
-        List<ProcessElementVariableDefinition> contextDependentProcessVariableDefinitionList = getIoVariableSourceByExpression(businessTask,
+        // TODO It would be great if this parsed object list could be stored somewhere instead of being generated every time
+        List<ProcessElementVariableMappingDefinition> contextDependentProcessVariableMappingDefinitionList = getIoVariableSourceByExpression(businessTask,
                 ioVariableSourceExpression);
 
         // TODO LATER Remove previous, not used variables
-        for (ProcessElementVariableDefinition contextDependentProcessVariableDefinition : contextDependentProcessVariableDefinitionList) {
+        for (ProcessElementVariableMappingDefinition contextDependentProcessVariableMappingDefinition : contextDependentProcessVariableMappingDefinitionList) {
             MetaAttribute dynamicTag = repoHandler.createMetaAttribute(WorklineEngineConstants.DYNAMIC, EAttributeType.STRING, ioVariableSourceExpression);
 
-            RepoItemAttribute variable = processElementService.addVariableToProcessElement(businessTask, contextDependentProcessVariableDefinition, dynamicTag);
+            RepoItemAttribute variable = processElementService.processVariableMappingForProcessElement(businessTask, contextDependentProcessVariableMappingDefinition,
+                    dynamicTag);
 
             if (variable != null) {
-                if (contextDependentProcessVariableDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
-                    if (process.hasAttribute(contextDependentProcessVariableDefinition.getName())) {
-                        processElementService.copyProcessElementVariableValue(process, businessTask, contextDependentProcessVariableDefinition);
+                if (contextDependentProcessVariableMappingDefinition.getInputVariableScope() == EInputVariableScope.PROCESS) {
+                    if (process.hasAttribute(contextDependentProcessVariableMappingDefinition.getExpression())) {
+                        processElementService.copyProcessElementVariableValue(process, businessTask, contextDependentProcessVariableMappingDefinition);
                     } else {
-                        processElementService.addVariableToProcessElement(process, contextDependentProcessVariableDefinition);
+                        processElementService.processVariableMappingForProcessElement(process, contextDependentProcessVariableMappingDefinition, dynamicTag);
                     }
                 } else {
                     // Do nothing. All variables (regardless of scope) has already been added to business task.
@@ -238,10 +223,10 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         }
     }
 
-    private List<ProcessElementVariableDefinition> getIoVariableSourceByExpression(RepoItem businessTask, String expression) {
+    private List<ProcessElementVariableMappingDefinition> getIoVariableSourceByExpression(RepoItem businessTask, String expression) {
         Set<String> flatDataSet = getFlatDataSetByExpression(businessTask, expression);
 
-        return parseIoVariableSourceData(flatDataSet);
+        return ioVariableSourceDataParser.parseIoVariableSourceData(flatDataSet);
     }
 
     private RepoItem getBusinessTaskDefinition(RepoItem businessTask) {

@@ -18,12 +18,12 @@ public class TmpRestEndpoint {
     private TmpService tmpService;
 
     @GET
-    @Path("/setStringValue/{repoItemId}/{benefactorRepoItemId}/{attributeName}/{stringValue}")
+    @Path("/setStringValue/{repoItemId}/{inheritenceSourceRepoItemId}/{attributeName}/{stringValue}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Object setStringValue(@PathParam("repoItemId") Long repoItemId, @PathParam("benefactorRepoItemId") Long benefactorRepoItemId,
+    public Object setStringValue(@PathParam("repoItemId") Long repoItemId, @PathParam("inheritenceSourceRepoItemId") Long inheritenceSourceRepoItemId,
             @PathParam("attributeName") String attributeName, @PathParam("stringValue") String stringValue) {
 
-        tmpService.setStringValue(repoItemId, benefactorRepoItemId, attributeName, stringValue);
+        tmpService.setStringValue(repoItemId, inheritenceSourceRepoItemId, attributeName, stringValue);
 
         return true;
     }
@@ -37,5 +37,19 @@ public class TmpRestEndpoint {
         tmpService.setStringValue(repoItemId, attributeName, stringValue);
 
         return true;
+    }
+
+    @GET
+    @Path("/putIntoCache/{key}/{value}")
+    public Object putIntoCache(@PathParam("key") String key, @PathParam("value") String value) {
+        tmpService.putIntoCache(key, value);
+
+        return true;
+    }
+
+    @GET
+    @Path("/retrieveFromCache/{key}")
+    public Object retrieveFromCache(@PathParam("key") String key) {
+        return tmpService.retrieveFromCache(key);
     }
 }

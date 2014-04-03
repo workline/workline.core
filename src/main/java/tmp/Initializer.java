@@ -14,9 +14,9 @@ import vrds.model.attributetype.AttributeValueHandler;
 import vrds.model.attributetype.RepoItemAttributeValueHandler;
 import vrds.model.attributetype.StringAttributeValueHandler;
 import workline.core.api.internal.IRepoHandler;
+import workline.core.api.internal.IRepoManager;
 import workline.core.domain.EInheritenceType;
 import workline.core.engine.constants.WorklineEngineConstants;
-import workline.core.repo.manager.IRepoManager;
 
 @Startup
 @Singleton
@@ -128,8 +128,8 @@ public class Initializer {
             } else {
                 repoManager.addInheritenceType(attribute, EInheritenceType.OVERRIDE);
             }
-            if (repoItemAttributeData.benefactor != null) {
-                repoManager.addBenefactor(attribute, repoItemAttributeData.benefactor);
+            if (repoItemAttributeData.inheritenceSource != null) {
+                repoManager.addInheritenceSource(attribute, repoItemAttributeData.inheritenceSource);
             }
             if (repoItemAttributeData.value != null) {
                 repoManager.setValue(repoItem, repoItemAttributeData.name, repoItemAttributeData.value);
@@ -156,7 +156,7 @@ public class Initializer {
         AttributeValueHandler<T, ?> attributeValueHandler;
         T value;
         EInheritenceType inheritenceType;
-        RepoItem benefactor;
+        RepoItem inheritenceSource;
 
         public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler) {
             this(name, attributeValueHandler, null, null, null);
@@ -166,16 +166,18 @@ public class Initializer {
             this(name, attributeValueHandler, null, null, value);
         }
 
-        public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler, EInheritenceType inheritenceType, RepoItem benefactor) {
-            this(name, attributeValueHandler, inheritenceType, benefactor, null);
+        public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler, EInheritenceType inheritenceType,
+                RepoItem inheritenceSource) {
+            this(name, attributeValueHandler, inheritenceType, inheritenceSource, null);
         }
 
-        public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler, EInheritenceType inheritenceType, RepoItem benefactor,
+        public RepoItemAttributeData(String name, AttributeValueHandler<T, ?> attributeValueHandler, EInheritenceType inheritenceType,
+                RepoItem inheritenceSource,
                 T value) {
             this.name = name;
             this.attributeValueHandler = attributeValueHandler;
             this.inheritenceType = inheritenceType;
-            this.benefactor = benefactor;
+            this.inheritenceSource = inheritenceSource;
             this.value = value;
         }
     }

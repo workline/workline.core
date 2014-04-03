@@ -29,6 +29,7 @@ import vrds.model.RepoItemValue_;
 import vrds.model.attributetype.AttributeValueHandler;
 import workline.core.api.internal.IRepoHandler;
 import workline.core.engine.constants.WorklineRepoConstants;
+import workline.core.meta.NeededToHandleInRepoRegistry;
 import workline.core.util.Primary;
 
 @Logged
@@ -58,6 +59,7 @@ public class RepoHandler implements IRepoHandler {
         return _addAttribute(repoItem, attributeName, type);
     }
 
+    @NeededToHandleInRepoRegistry
     @Override
     public RepoItemAttribute addAttribute(RepoItem repoItem, String attributeName, EAttributeType type, Object value) {
         RepoItemAttribute repoItemAttribute = _addAttribute(repoItem, attributeName, type);
@@ -92,6 +94,7 @@ public class RepoHandler implements IRepoHandler {
         return repoItem.getValues(attributeName, attributeValueHandler);
     }
 
+    @NeededToHandleInRepoRegistry
     @Override
     public MetaAttribute createMetaAttribute(RepoItemAttribute ownerAttribute, String name, EAttributeType type, Object value) {
         MetaAttribute metaAttribute = new MetaAttribute();
@@ -127,12 +130,12 @@ public class RepoHandler implements IRepoHandler {
     }
 
     @Override
-    public void setValue(RepoItem repoItem, RepoItem benefactor, String attributeName, Object value) {
-        IValueWrapper<Object> valueWrapper = repoItem.getValueWrapper(attributeName, benefactor);
+    public void setValue(RepoItem repoItem, RepoItem inheritenceSource, String attributeName, Object value) {
+        IValueWrapper<Object> valueWrapper = repoItem.getValueWrapper(attributeName, inheritenceSource);
 
         if (valueWrapper == null) {
             IValueWrapper<?> newValueWrapper = repoItem.addValue(attributeName, value);
-            newValueWrapper.setBenefactor(benefactor);
+            newValueWrapper.setInheritenceSource(inheritenceSource);
             entityManager.persist(newValueWrapper);
         } else {
             valueWrapper.setValue(value);
@@ -140,7 +143,7 @@ public class RepoHandler implements IRepoHandler {
     }
 
     @Override
-    public Collection<RepoItemAttribute> getInheritors(RepoItem benefactor, String attributeName) {
+    public Collection<RepoItemAttribute> getInheritors(RepoItem inheritenceSource, String attributeName) {
         CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
         CriteriaQuery<RepoItemAttribute> query = criteriaBuilder.createQuery(RepoItemAttribute.class);
         query.distinct(true);
@@ -153,7 +156,7 @@ public class RepoHandler implements IRepoHandler {
         Predicate predicate = criteriaBuilder.and(
                 criteriaBuilder.equal(root.get(RepoItemAttribute_.name), attributeName),
                 criteriaBuilder.equal(joinInheritorMetaAttributes.get(MetaAttribute_.name), WorklineRepoConstants.INHERITENCE_SOURCE_META_ATTRIBUTE_NAME),
-                criteriaBuilder.equal(joinInheritorMetaAttributeRepoItemValues.get(RepoItemValue_.value), benefactor));
+                criteriaBuilder.equal(joinInheritorMetaAttributeRepoItemValues.get(RepoItemValue_.value), inheritenceSource));
         query.select(root).where(predicate);
 
         List<RepoItemAttribute> inheritorList = entityManager.createQuery(query).getResultList();

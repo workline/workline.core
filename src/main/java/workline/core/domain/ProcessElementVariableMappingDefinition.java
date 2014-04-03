@@ -2,21 +2,21 @@ package workline.core.domain;
 
 import java.io.Serializable;
 
-public class ProcessElementVariableDefinition implements Serializable {
+public class ProcessElementVariableMappingDefinition implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String name;
+    private String expression;
     private InputVariableTypeData type;
     private EInputVariableScope inputVariableScope;
     private String inputVariableSelectionQuery;
-    private String mappedToExpression;
+    private MappingExpression mappingExpression;
 
-    public String getName() {
-        return name;
+    public String getExpression() {
+        return expression;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setExpression(String nameExpression) {
+        this.expression = nameExpression;
     }
 
     public InputVariableTypeData getType() {
@@ -43,18 +43,18 @@ public class ProcessElementVariableDefinition implements Serializable {
         this.inputVariableSelectionQuery = inputVariableSelectionQuery;
     }
 
-    public String getMappedToExpression() {
-        return mappedToExpression;
+    public MappingExpression getMappingExpression() {
+        return mappingExpression;
     }
 
-    public void setMappedToExpression(String mappedToExpression) {
-        this.mappedToExpression = mappedToExpression;
+    public void setMappingExpression(MappingExpression mappedToExpression) {
+        this.mappingExpression = mappedToExpression;
     }
 
     @Override
     public String toString() {
-        return "ProcessElementVariableDefinition [name=" + name + ", type=" + type + ", inputVariableScope=" + inputVariableScope
-                + ", inputVariableSelectionQuery=" + inputVariableSelectionQuery + ", mappedToExpression=" + mappedToExpression + "]";
+        return "ProcessElementVariableMappingDefinition [expression=" + expression + ", type=" + type + ", inputVariableScope=" + inputVariableScope
+                + ", inputVariableSelectionQuery=" + inputVariableSelectionQuery + ", mappingExpression=" + mappingExpression + "]";
     }
 
 }
