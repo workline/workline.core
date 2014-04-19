@@ -3,6 +3,7 @@ package workline.core.businesstask.util;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import vrds.model.RepoItem;
@@ -10,6 +11,7 @@ import workline.core.api.internal.IBusinessTaskHandler;
 import workline.core.api.internal.IExpressionProcessor;
 import workline.core.repo.listener.RepoItemValueReference;
 
+@ApplicationScoped
 public class ExpressionProcessor implements IExpressionProcessor {
     @Inject
     private IBusinessTaskHandler businessTaskHandler;

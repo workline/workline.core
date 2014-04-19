@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import loggee.api.Logged;
@@ -31,6 +32,7 @@ import workline.core.domain.ProcessElementVariableMappingDefinition;
 import workline.core.engine.constants.WorklineEngineConstants;
 
 @Logged
+@ApplicationScoped
 public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
     @Inject
     private IRepoManager repoManager;
@@ -206,7 +208,8 @@ public class DefaultBusinessTaskHandler implements IBusinessTaskHandler {
         for (ProcessElementVariableMappingDefinition contextDependentProcessVariableMappingDefinition : contextDependentProcessVariableMappingDefinitionList) {
             MetaAttribute dynamicTag = repoHandler.createMetaAttribute(WorklineEngineConstants.DYNAMIC, EAttributeType.STRING, ioVariableSourceExpression);
 
-            RepoItemAttribute variable = processElementService.processVariableMappingForProcessElement(businessTask, contextDependentProcessVariableMappingDefinition,
+            RepoItemAttribute variable = processElementService.processVariableMappingForProcessElement(businessTask,
+                    contextDependentProcessVariableMappingDefinition,
                     dynamicTag);
 
             if (variable != null) {

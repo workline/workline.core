@@ -3,6 +3,7 @@ package workline.core.repo.handler.workflow.service;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import loggee.api.Logged;
@@ -32,6 +33,7 @@ import workline.core.repo.listener.MapperListener;
 import workline.core.repo.listener.RepoItemValueReference;
 
 @Logged
+@ApplicationScoped
 public class ProcessElementService implements IProcessElementService {
     @Inject
     private IRepoHandler repoHandler;
@@ -72,7 +74,8 @@ public class ProcessElementService implements IProcessElementService {
                 RepoItemValueReference toRepoItemValueReference = expressionProcessor.getRepoItemValueReference(processElementId, mappedToExpression);
                 RepoItemValueReference fromRepoItemValueReference = expressionProcessor.getRepoItemValueReference(processElementId, mappedFromExpression);
 
-                repoManager.setValue(processElement, attributeName, value);
+                // TODO HERE
+                // repoManager.setValue(processElement, attributeName, value);
 
                 // cucc
             } else if (mappingDirection == MappingDirection.FROM) {
